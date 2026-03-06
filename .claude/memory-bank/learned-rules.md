@@ -1054,3 +1054,108 @@
   confidence: 1.0
   learned_at: 2026-03-06
   based_on: 批准 3 次，拒绝 0 次
+
+### learned-20260306154047
+- tool: ToolSearch
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 4 次，拒绝 0 次
+
+### learned-20260306154047
+- tool: Agent
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 6 次，拒绝 0 次
+
+### learned-20260306154047
+- tool: TaskCreate
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 5 次，拒绝 0 次
+
+### learned-20260306154047
+- tool: TaskUpdate
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 3 次，拒绝 0 次
+
+### learned-20260306154159
+- tool: ToolSearch
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 4 次，拒绝 0 次
+
+### learned-20260306154159
+- tool: Agent
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 6 次，拒绝 0 次
+
+### learned-20260306154159
+- tool: Bash
+  action: allow
+  pattern: ^/Users/michael/\.local/bin/tcd
+  reason: 用户总是批准 /Users/michael/.local/bin/tcd 命令
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 3 次，拒绝 0 次
+
+### learned-20260306154159
+- tool: TaskCreate
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 5 次，拒绝 0 次
+
+### learned-20260306154159
+- tool: TaskUpdate
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 3 次，拒绝 0 次
+
+### learned-20260306154244
+- tool: ToolSearch
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 4 次，拒绝 0 次
+
+### learned-20260306154244
+- tool: Agent
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 6 次，拒绝 0 次
+
+### learned-20260306154244
+- tool: TaskCreate
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 5 次，拒绝 0 次
+
+### learned-20260306154244
+- tool: TaskUpdate
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 3 次，拒绝 0 次
