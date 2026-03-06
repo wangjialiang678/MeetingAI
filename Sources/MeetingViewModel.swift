@@ -294,7 +294,8 @@ class MeetingViewModel: ObservableObject {
     // MARK: - Step D: ASR reconnect
 
     private func handleASRError(_ message: String) {
-        let isConnectionError = message.contains("funasr") || message.contains("WebSocket 接收错误")
+        let isConnectionError = message.contains("WebSocket 接收错误")
+            || message.contains("ASR Bridge 错误")
             || message.contains("connection") || message.contains("Connection")
 
         if isConnectionError && isRecording && asrReconnectCount < maxASRReconnects {

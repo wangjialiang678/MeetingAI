@@ -45,8 +45,17 @@ class ASRServerManager: ObservableObject {
         env["ASR_BRIDGE_PORT"] = String(port)
         proc.environment = env
 
+        // 将 Go 子进程的 stderr 转发到 os.log
+        let errPipe = Pipe()
         proc.standardOutput = FileHandle.nullDevice
-        proc.standardError = FileHandle.nullDevice
+        proc.standardError = errPipe
+        errPipe.fileHandleForReading.readabilityHandler = { handle in
+            let data = handle.availableData
+            guard !data.isEmpty, let line = String(data: data, encoding: .utf8) else { return }
+            for l in line.split(separator: "\n") {
+                logger.info("[bridge] \(l)")
+            }
+        }
 
         logger.info("Launching asr-bridge on :\(self.port)")
         try proc.run()
@@ -110,8 +119,12 @@ class ASRServerManager: ObservableObject {
 
     func stop() {
         logger.info("Stopping asr-bridge")
-        process?.terminate()
-        process?.waitUntilExit()
+        if let proc = process {
+            // 停止 stderr pipe 读取
+            (proc.standardError as? Pipe)?.fileHandleForReading.readabilityHandler = nil
+            proc.terminate()
+            proc.waitUntilExit()
+        }
         process = nil
         isRunning = false
     }

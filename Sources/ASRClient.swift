@@ -32,14 +32,26 @@ class ASRClient {
             if let error {
                 self?.onError?("start 消息发送失败: \(error.localizedDescription)")
             } else {
+                // 立即允许发送音频，避免等待 "started" 事件期间丢失首秒数据
+                // asr-bridge 会在 DashScope 握手完成前缓冲收到的音频
+                self?.isConnected = true
+                logger.info("start message sent, audio forwarding enabled")
                 self?.receiveLoop()
             }
         }
     }
 
+    private var audioChunkCount = 0
+
     /// 发送 PCM16 音频数据（Base64 编码）
     func sendAudio(_ data: Data) {
         guard isConnected else { return }
+        audioChunkCount += 1
+        if audioChunkCount == 1 {
+            logger.info("First audio chunk sent (\(data.count) bytes)")
+        } else if audioChunkCount % 500 == 0 {
+            logger.debug("Audio chunks sent: \(self.audioChunkCount)")
+        }
         let audioMsg: [String: Any] = [
             "type": "audio",
             "data": data.base64EncodedString()
@@ -54,6 +66,7 @@ class ASRClient {
     }
 
     func disconnect() {
+        logger.info("Disconnecting (sent \(self.audioChunkCount) audio chunks total)")
         sendStop()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             self?.isConnected = false
@@ -101,11 +114,13 @@ class ASRClient {
 
         case "partial":
             if let partialText = json["text"] as? String, !partialText.isEmpty {
+                logger.debug("partial: \(partialText)")
                 onTranscript?(partialText, false)
             }
 
         case "final":
             if let finalText = json["text"] as? String, !finalText.isEmpty {
+                logger.info("final: \(finalText)")
                 onTranscript?(finalText, true)
             }
 
