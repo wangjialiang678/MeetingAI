@@ -7,12 +7,16 @@ private let logger = Logger(subsystem: "MeetingAI", category: "ViewModel")
 @MainActor
 class MeetingViewModel: ObservableObject {
     @Published var transcriptEntries: [TranscriptEntry] = []
-    @Published var chatMessages: [ChatMessage] = []
+    @Published var insightCards: [InsightCard] = []
     @Published var isRecording = false
     @Published var isServerRunning = false
     @Published var recordingDuration: TimeInterval = 0
     @Published var userInput = ""
     @Published var isAnalyzing = false
+    @Published var aiMode: AIMode = .advisor
+
+    // Temporary backward compat — removed when frontend task merges
+    var chatMessages: [InsightCard] { insightCards }
 
     private var audioRecorder: AudioRecorder?
     private var asrClient: ASRClient?
@@ -37,6 +41,8 @@ class MeetingViewModel: ObservableObject {
     private var lastTranscriptTime = Date.distantPast
     private var lastAnalysisTime = Date.distantPast
     private var analysisCount = 0
+    private var lastTopicKeywords: [String] = []
+    private var consecutiveSilentCount = 0
 
     init() {
         config = AppConfig.load()
@@ -53,7 +59,7 @@ class MeetingViewModel: ObservableObject {
             try await serverManager!.start()
             isServerRunning = true
         } catch {
-            appendChat(.system, "ASR 服务启动失败: \(error.localizedDescription)")
+            appendSystemMessage("ASR 服务启动失败: \(error.localizedDescription)")
             return
         }
 
@@ -81,6 +87,8 @@ class MeetingViewModel: ObservableObject {
         lastAnalysisEntryCount = 0
         lastAnalysisTime = .distantPast
         lastTranscriptTime = .distantPast
+        lastTopicKeywords = []
+        consecutiveSilentCount = 0
 
         // Step A: Create session file (and derive MP3 URL from same base)
         createSessionFile()
@@ -94,7 +102,7 @@ class MeetingViewModel: ObservableObject {
         do {
             try recorder.start(recordingURL: mp3URL)
         } catch {
-            appendChat(.system, "录音启动失败: \(error.localizedDescription)")
+            appendSystemMessage("录音启动失败: \(error.localizedDescription)")
             return
         }
         audioRecorder = recorder
@@ -103,7 +111,7 @@ class MeetingViewModel: ObservableObject {
         // 5. Start timers
         startTimers()
 
-        appendChat(.system, "会议已开始，AI 将在沉默或内容积累时自动分析。点击 ⚡ 可随时手动触发分析。")
+        appendSystemMessage("会议已开始，AI 将在沉默或内容积累时自动分析。点击 ⚡ 可随时手动触发分析。")
     }
 
     func stopMeeting() {
@@ -123,27 +131,44 @@ class MeetingViewModel: ObservableObject {
         recordingDuration = 0
 
         let savedTxt = sessionFileURL
+        saveAILog()
+        let savedAILog = sessionFileURL?.deletingPathExtension().appendingPathExtension("ai.md")
 
         // Reset state
         analysisCount = 0
         lastAnalysisEntryCount = 0
         lastAnalysisTime = .distantPast
+        lastTopicKeywords = []
+        consecutiveSilentCount = 0
         sessionFileURL = nil
 
         var msg = "会议已结束"
         if let mp3 = savedMP3 { msg += "\n录音：\(mp3.path)" }
         if let txt = savedTxt { msg += "\n转写：\(txt.path)" }
-        appendChat(.system, msg)
+        if let aiLog = savedAILog { msg += "\nAI记录：\(aiLog.path)" }
+        appendSystemMessage(msg)
     }
 
     func triggerAnalysis() {
         guard isRecording, !isAnalyzing else {
-            if !isRecording { appendChat(.system, "请先开始会议") }
+            if !isRecording { appendSystemMessage("请先开始会议") }
             return
         }
+
+        // Minimum output interval
+        let minInterval: TimeInterval
+        switch aiMode {
+        case .observer: minInterval = .infinity
+        case .advisor: minInterval = 120
+        case .researcher: minInterval = 45
+        }
+        if Date().timeIntervalSince(lastAnalysisTime) < minInterval {
+            return
+        }
+
         let finalCount = transcriptEntries.filter(\.isFinal).count
         guard finalCount > lastAnalysisEntryCount else {
-            appendChat(.system, "暂无新转写内容可分析")
+            appendSystemMessage("暂无新转写内容可分析")
             return
         }
 
@@ -155,7 +180,9 @@ class MeetingViewModel: ObservableObject {
         let customPrompt = UserDefaults.standard.string(forKey: "customSystemPrompt")
             .flatMap { $0.isEmpty ? nil : $0 }
         let systemPrompt = customPrompt ?? Self.buildDefaultSystemPrompt(
-            count: analysisCount, elapsedMin: Int(recordingDuration / 60)
+            count: analysisCount,
+            elapsedMin: Int(recordingDuration / 60),
+            mode: aiMode
         )
         let userContent = buildAnalysisUserContent()
 
@@ -164,14 +191,35 @@ class MeetingViewModel: ObservableObject {
         Task {
             defer { Task { @MainActor in self.isAnalyzing = false } }
             do {
-                let result = try await aiEngine?.analyze(systemPrompt: systemPrompt, userContent: userContent)
-                if let result, result.trimmingCharacters(in: .whitespacesAndNewlines) != "—" {
-                    logger.info("AI analysis completed, length=\(result.count)")
-                    appendChat(.assistant, result)
+                guard let result = try await aiEngine?.analyzeStructured(systemPrompt: systemPrompt, userContent: userContent) else { return }
+
+                // Topic change detection
+                if !lastTopicKeywords.isEmpty && !result.topicKeywords.isEmpty {
+                    let oldSet = Set(lastTopicKeywords)
+                    let newSet = Set(result.topicKeywords)
+                    let overlap = oldSet.intersection(newSet).count
+                    let total = max(oldSet.count, newSet.count)
+                    if total > 0 && Double(overlap) / Double(total) < 0.3 {
+                        // Topic changed significantly, trigger summary
+                        triggerSummary()
+                    }
+                }
+                lastTopicKeywords = result.topicKeywords
+
+                if result.shouldSpeak {
+                    consecutiveSilentCount = 0
+                    appendCard(result.kind, result.content)
+                } else {
+                    consecutiveSilentCount += 1
+                    // Force speak after 3 consecutive silences in advisor/researcher mode
+                    if aiMode != .observer && consecutiveSilentCount >= 3 {
+                        consecutiveSilentCount = 0
+                        appendCard(.insight, result.content)
+                    }
                 }
             } catch {
                 logger.error("AI analysis failed: \(error.localizedDescription)")
-                appendChat(.system, "AI 分析失败: \(error.localizedDescription)")
+                appendSystemMessage("AI 分析失败: \(error.localizedDescription)")
             }
         }
     }
@@ -179,25 +227,22 @@ class MeetingViewModel: ObservableObject {
     func sendUserMessage() {
         let text = userInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-
-        appendChat(.user, text)
         userInput = ""
 
-        let customPrompt = UserDefaults.standard.string(forKey: "customSystemPrompt")
-            .flatMap { $0.isEmpty ? nil : $0 }
-        let systemPrompt = customPrompt ?? Self.buildDefaultSystemPrompt(
-            count: analysisCount, elapsedMin: Int(recordingDuration / 60)
-        )
+        let replyPrompt = """
+        用户在会议中提问。请直接回答用户的问题，结合会议上下文给出有深度的回复。
+        返回纯文本即可，不需要 JSON 格式。
+        """
         let userContent = buildAnalysisUserContent() + "\n\n用户追问：\(text)"
 
         Task {
             do {
-                let result = try await aiEngine?.analyze(systemPrompt: systemPrompt, userContent: userContent)
+                let result = try await aiEngine?.analyze(systemPrompt: replyPrompt, userContent: userContent)
                 if let result {
-                    appendChat(.assistant, result)
+                    appendCard(.reply, result, userQuery: text)
                 }
             } catch {
-                appendChat(.system, "AI 回复失败: \(error.localizedDescription)")
+                appendSystemMessage("AI 回复失败: \(error.localizedDescription)")
             }
         }
     }
@@ -213,7 +258,7 @@ class MeetingViewModel: ObservableObject {
         }
         guard panel.runModal() == .OK, let url = panel.url else { return }
         guard let content = try? String(contentsOf: url, encoding: .utf8) else {
-            appendChat(.system, "无法读取文件")
+            appendSystemMessage("无法读取文件")
             return
         }
         let imported = content.components(separatedBy: .newlines).compactMap { line -> TranscriptEntry? in
@@ -222,11 +267,11 @@ class MeetingViewModel: ObservableObject {
             return text.isEmpty ? nil : TranscriptEntry(timestamp: .distantPast, text: text, isFinal: true)
         }
         guard !imported.isEmpty else {
-            appendChat(.system, "文件中没有找到有效的转写内容")
+            appendSystemMessage("文件中没有找到有效的转写内容")
             return
         }
         transcriptEntries = imported + transcriptEntries
-        appendChat(.system, "已导入 \(imported.count) 条历史转写（标记为「早期」内容）")
+        appendSystemMessage("已导入 \(imported.count) 条历史转写（标记为「早期」内容）")
     }
 
     // MARK: - Private
@@ -245,9 +290,16 @@ class MeetingViewModel: ObservableObject {
             // Step E: Update last transcript time
             lastTranscriptTime = Date()
 
-            // Content accumulation trigger: every 8 new final entries
+            // Content accumulation trigger based on mode
             let finalCount = transcriptEntries.filter(\.isFinal).count
-            if finalCount - lastAnalysisEntryCount >= 8 {
+            let newEntries = finalCount - lastAnalysisEntryCount
+            let threshold: Int
+            switch aiMode {
+            case .observer: threshold = Int.max
+            case .advisor: threshold = 5
+            case .researcher: threshold = 3
+            }
+            if newEntries >= threshold {
                 triggerAnalysis()
             }
         } else {
@@ -259,8 +311,32 @@ class MeetingViewModel: ObservableObject {
         }
     }
 
-    private func appendChat(_ role: ChatMessage.MessageRole, _ content: String) {
-        chatMessages.append(ChatMessage(timestamp: Date(), role: role, content: content))
+    private func appendCard(_ kind: InsightCard.Kind, _ content: String, userQuery: String? = nil) {
+        insightCards.append(InsightCard(content: content, kind: kind, userQuery: userQuery))
+    }
+
+    /// For system messages, use .insight kind
+    private func appendSystemMessage(_ content: String) {
+        appendCard(.insight, "[系统] \(content)")
+    }
+
+    private func triggerSummary() {
+        guard !isAnalyzing else { return }
+        let summaryPrompt = """
+        请对刚才的讨论阶段做一个简短的小结，包括：已达成的共识、悬而未决的问题、建议的下一步。
+        返回 JSON：{"should_speak": true, "content": "小结内容", "kind": "summary", "topic_keywords": []}
+        """
+        let userContent = buildAnalysisUserContent()
+        Task {
+            do {
+                guard let result = try await aiEngine?.analyzeStructured(systemPrompt: summaryPrompt, userContent: userContent) else { return }
+                if result.shouldSpeak {
+                    appendCard(.summary, result.content)
+                }
+            } catch {
+                logger.error("Summary generation failed: \(error.localizedDescription)")
+            }
+        }
     }
 
     // MARK: - Step A: Session file
@@ -291,6 +367,48 @@ class MeetingViewModel: ObservableObject {
         }
     }
 
+    private func saveAILog() {
+        guard let sessionURL = sessionFileURL else { return }
+        let aiLogURL = sessionURL.deletingPathExtension().appendingPathExtension("ai.md")
+
+        var lines: [String] = ["# AI 洞察记录\n"]
+
+        // Pinned cards first
+        let pinned = insightCards.filter(\.isPinned)
+        if !pinned.isEmpty {
+            lines.append("## 📌 重要标记\n")
+            for card in pinned {
+                let formatter = DateFormatter()
+                formatter.dateFormat = "HH:mm:ss"
+                lines.append("- [\(formatter.string(from: card.timestamp))] \(card.content)\n")
+            }
+            lines.append("")
+        }
+
+        // All cards chronologically
+        lines.append("## 完整记录\n")
+        for card in insightCards {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm:ss"
+            let pin = card.isPinned ? " 📌" : ""
+            let prefix: String
+            switch card.kind {
+            case .insight: prefix = "💡"
+            case .reply: prefix = "💬"
+            case .summary: prefix = "📋"
+            }
+            if let query = card.userQuery {
+                lines.append("- [\(formatter.string(from: card.timestamp))] \(prefix) 用户问: \(query)\n  \(card.content)\(pin)\n")
+            } else {
+                lines.append("- [\(formatter.string(from: card.timestamp))] \(prefix) \(card.content)\(pin)\n")
+            }
+        }
+
+        let text = lines.joined(separator: "\n")
+        try? text.write(to: aiLogURL, atomically: true, encoding: .utf8)
+        logger.info("AI log saved to \(aiLogURL.path)")
+    }
+
     // MARK: - Step D: ASR reconnect
 
     private func handleASRError(_ message: String) {
@@ -300,13 +418,13 @@ class MeetingViewModel: ObservableObject {
 
         if isConnectionError && isRecording && asrReconnectCount < maxASRReconnects {
             asrReconnectCount += 1
-            appendChat(.system, "ASR 连接中断，正在重连（\(asrReconnectCount)/\(maxASRReconnects)）…")
+            appendSystemMessage("ASR 连接中断，正在重连（\(asrReconnectCount)/\(maxASRReconnects)）…")
             Task {
                 try? await Task.sleep(nanoseconds: 2_000_000_000)
                 await reconnectASR()
             }
         } else {
-            appendChat(.system, "ASR 错误: \(message)")
+            appendSystemMessage("ASR 错误: \(message)")
         }
     }
 
@@ -322,7 +440,7 @@ class MeetingViewModel: ObservableObject {
         }
         client.connect(port: config.asrServerPort)
         asrClient = client
-        appendChat(.system, "ASR 已重连 ✓")
+        appendSystemMessage("ASR 已重连 ✓")
         asrReconnectCount = 0
     }
 
@@ -348,7 +466,20 @@ class MeetingViewModel: ObservableObject {
         let silenceDuration = Date().timeIntervalSince(lastTranscriptTime)
         let timeSinceLastAnalysis = Date().timeIntervalSince(lastAnalysisTime)
 
-        let silenceTrigger = silenceDuration > 30 && newSinceLastAnalysis >= 3
+        let silenceThreshold: TimeInterval
+        let minNewEntries: Int
+        switch aiMode {
+        case .observer:
+            return
+        case .advisor:
+            silenceThreshold = 60
+            minNewEntries = 3
+        case .researcher:
+            silenceThreshold = 30
+            minNewEntries = 2
+        }
+
+        let silenceTrigger = silenceDuration > silenceThreshold && newSinceLastAnalysis >= minNewEntries
         let ceilingTrigger = timeSinceLastAnalysis > 600
 
         if silenceTrigger || ceilingTrigger {
@@ -366,28 +497,51 @@ class MeetingViewModel: ObservableObject {
 
     // MARK: - Step E: AI prompt builders
 
-    static func buildDefaultSystemPrompt(count: Int, elapsedMin: Int) -> String {
+    static func buildDefaultSystemPrompt(count: Int, elapsedMin: Int, mode: AIMode) -> String {
+        let modeInstruction: String
+        switch mode {
+        case .observer:
+            modeInstruction = "你处于观察模式。除非发现重大问题或被直接提问，否则 should_speak 设为 false。"
+        case .advisor:
+            modeInstruction = "你处于顾问模式。有值得分享的洞察时才发言，不要面面俱到。"
+        case .researcher:
+            modeInstruction = "你处于研究员模式。积极发言，主动提出问题和研究方向。"
+        }
+
         let synthNote = count > 1 && count % 5 == 0
-            ? "\n\n⚡ 这一轮请做一次「全局地图」：已决定的 / 悬而未决的 / 需要跟进的行动项。"
+            ? "\n\n这一轮请做一次「阶段小结」：已决定的 / 悬而未决的 / 需要跟进的行动项。此时 kind 设为 \"summary\"。"
             : ""
 
         return """
         你是一位旁听这场会议的智囊伙伴，思维敏锐，说话直接。
         当前是第 \(count) 次分析，会议已进行 \(elapsedMin) 分钟。
+        \(modeInstruction)
+
+        你必须返回一个 JSON 对象（不要包裹在 markdown 代码块中），格式如下：
+        {
+          "should_speak": true/false,
+          "content": "你想说的内容",
+          "kind": "insight",
+          "topic_keywords": ["关键词1", "关键词2"]
+        }
 
         行为原则：
-        1. 先问自己「这里有什么真正有意思的？」——再开口
-        2. 如果新增内容没什么值得讨论的，只输出「—」，立刻停止
-        3. 有内容时，选一个你最想深挖的角度切入，不要面面俱到
-        4. 观察之后，主动说出你认为值得追问或讨论的方向
-        5. 格式随内容走——有时候两段话，有时候一个问题，有时候列表，自己判断
-        6. 你可以有自己的立场和观点，不要重复上次说过的内容\(synthNote)
+        1. 先判断「这里有什么真正值得说的？」— 如果没有，should_speak 设为 false
+        2. 有内容时，选一个最想深挖的角度切入
+        3. 观察之后，主动说出值得追问或讨论的方向
+        4. kind 通常是 "insight"，阶段小结时用 "summary"
+        5. topic_keywords 提取 3-5 个当前讨论的核心关键词
+        6. 不要重复上次说过的内容\(synthNote)
         """
+    }
+
+    static func buildDefaultSystemPrompt(count: Int, elapsedMin: Int) -> String {
+        buildDefaultSystemPrompt(count: count, elapsedMin: elapsedMin, mode: .advisor)
     }
 
     private func buildAnalysisUserContent() -> String {
         let now = Date()
-        let lastAIMessage = chatMessages.last(where: { $0.role == .assistant })?.content
+        let lastAIMessage = insightCards.last?.content
 
         let tiers = transcriptEntries.filter(\.isFinal).map { entry -> String in
             let age = now.timeIntervalSince(entry.timestamp)
