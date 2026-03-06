@@ -10,15 +10,21 @@ class ASRServerManager: ObservableObject {
     private let port: Int
     private let apiKey: String
 
-    private let goProjectDir = "/Users/michael/projects/组件模块/audio-asr-suite/go/audio-asr-go"
+    private var goProjectDir: String {
+        let sourceFile = URL(fileURLWithPath: #file)
+        return sourceFile.deletingLastPathComponent()  // Sources/
+            .deletingLastPathComponent()                // project root
+            .appendingPathComponent("asr-bridge")
+            .path
+    }
 
-    init(port: Int = 18080, apiKey: String) {
+    init(port: Int = 18089, apiKey: String) {
         self.port = port
         self.apiKey = apiKey
     }
 
     func start() async throws {
-        let binaryPath = "\(goProjectDir)/bin/asr-server"
+        let binaryPath = "\(goProjectDir)/bin/asr-bridge"
 
         // Build if needed
         if !FileManager.default.fileExists(atPath: binaryPath) {
@@ -32,16 +38,17 @@ class ASRServerManager: ObservableObject {
         // Start process
         let proc = Process()
         proc.executableURL = URL(fileURLWithPath: binaryPath)
-        proc.arguments = ["--listen", ":\(port)"]
+        proc.arguments = []
 
         var env = ProcessInfo.processInfo.environment
         env["DASHSCOPE_API_KEY"] = apiKey
+        env["ASR_BRIDGE_PORT"] = String(port)
         proc.environment = env
 
         proc.standardOutput = FileHandle.nullDevice
         proc.standardError = FileHandle.nullDevice
 
-        logger.info("Launching asr-server on :\(self.port)")
+        logger.info("Launching asr-bridge on :\(self.port)")
         try proc.run()
         self.process = proc
 
@@ -70,7 +77,7 @@ class ASRServerManager: ObservableObject {
 
         let buildProcess = Process()
         buildProcess.executableURL = URL(fileURLWithPath: goPath)
-        buildProcess.arguments = ["build", "-o", outputPath, "./cmd/asr-server"]
+        buildProcess.arguments = ["build", "-o", outputPath, "."]
         buildProcess.currentDirectoryURL = URL(fileURLWithPath: goProjectDir)
         buildProcess.environment = ProcessInfo.processInfo.environment
 
@@ -92,7 +99,7 @@ class ASRServerManager: ObservableObject {
     }
 
     private func isHealthy() async -> Bool {
-        guard let url = URL(string: "http://127.0.0.1:\(port)/healthz") else { return false }
+        guard let url = URL(string: "http://127.0.0.1:\(port)/health") else { return false }
         do {
             let (_, response) = try await URLSession.shared.data(from: url)
             return (response as? HTTPURLResponse)?.statusCode == 200
@@ -102,7 +109,7 @@ class ASRServerManager: ObservableObject {
     }
 
     func stop() {
-        logger.info("Stopping asr-server")
+        logger.info("Stopping asr-bridge")
         process?.terminate()
         process?.waitUntilExit()
         process = nil
@@ -121,8 +128,8 @@ class ASRServerManager: ObservableObject {
         var errorDescription: String? {
             switch self {
             case .goNotFound: return "未找到 Go 编译器（检查 /opt/homebrew/bin/go 等路径）"
-            case .buildFailed: return "asr-server 编译失败"
-            case .startupTimeout: return "asr-server 启动超时（15秒内未通过健康检查）"
+            case .buildFailed: return "asr-bridge 编译失败"
+            case .startupTimeout: return "asr-bridge 启动超时（15秒内未通过健康检查）"
             }
         }
     }
