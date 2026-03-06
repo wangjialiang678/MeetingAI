@@ -1159,3 +1159,236 @@
   confidence: 1.0
   learned_at: 2026-03-06
   based_on: 批准 3 次，拒绝 0 次
+
+### learned-20260306154808
+- tool: ToolSearch
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 4 次，拒绝 0 次
+
+### learned-20260306154808
+- tool: Agent
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 6 次，拒绝 0 次
+
+### learned-20260306154808
+- tool: TaskCreate
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 5 次，拒绝 0 次
+
+### learned-20260306154808
+- tool: TaskUpdate
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 3 次，拒绝 0 次
+
+### learned-20260306154816
+- tool: ToolSearch
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 4 次，拒绝 0 次
+
+### learned-20260306154816
+- tool: Agent
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 6 次，拒绝 0 次
+
+### learned-20260306154816
+- tool: TaskCreate
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 5 次，拒绝 0 次
+
+### learned-20260306154816
+- tool: TaskUpdate
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 3 次，拒绝 0 次
+
+### learned-20260306154837
+- tool: ToolSearch
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 4 次，拒绝 0 次
+
+### learned-20260306154837
+- tool: Agent
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 6 次，拒绝 0 次
+
+### learned-20260306154837
+- tool: TaskCreate
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 5 次，拒绝 0 次
+
+### learned-20260306154837
+- tool: TaskUpdate
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 3 次，拒绝 0 次
+
+### learned-20260306161116
+- tool: ToolSearch
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 4 次，拒绝 0 次
+
+### learned-20260306161116
+- tool: Agent
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 6 次，拒绝 0 次
+
+### learned-20260306161116
+- tool: Bash
+  action: allow
+  pattern: ^swift
+  reason: 用户总是批准 swift 命令
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 3 次，拒绝 0 次
+
+### learned-20260306161116
+- tool: TaskCreate
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 5 次，拒绝 0 次
+
+### learned-20260306161116
+- tool: TaskUpdate
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 3 次，拒绝 0 次
+
+### learned-20260306161404
+- tool: ToolSearch
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 4 次，拒绝 0 次
+
+### learned-20260306161404
+- tool: Agent
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 6 次，拒绝 0 次
+
+### learned-20260306161404
+- tool: TaskCreate
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 5 次，拒绝 0 次
+
+### learned-20260306161404
+- tool: TaskUpdate
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 3 次，拒绝 0 次
+
+### learned-20260306161924
+- tool: ToolSearch
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 4 次，拒绝 0 次
+
+### learned-20260306161924
+- tool: Agent
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 6 次，拒绝 0 次
+
+### learned-20260306161924
+- tool: TaskCreate
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 5 次，拒绝 0 次
+
+### learned-20260306161924
+- tool: TaskUpdate
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 3 次，拒绝 0 次
+
+### learned-20260306162136
+- tool: ToolSearch
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 4 次，拒绝 0 次
+
+### learned-20260306162136
+- tool: Agent
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 6 次，拒绝 0 次
+
+### learned-20260306162136
+- tool: TaskCreate
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 5 次，拒绝 0 次
+
+### learned-20260306162136
+- tool: TaskUpdate
+  action: allow
+  reason: 从用户行为学习
+  confidence: 1.0
+  learned_at: 2026-03-06
+  based_on: 批准 3 次，拒绝 0 次
