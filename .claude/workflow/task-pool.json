@@ -1,0 +1,36 @@
+[
+  {
+    "id": "feat-go-bridge",
+    "description": "复制 speaklow asr-bridge Go 代码到项目 asr-bridge/ 目录，并按设计文档适配：main.go 移除 refine/transcribe-sync 路由、日志改 MeetingAI；env.go 改 env 搜索路径；go.mod 改模块名",
+    "files": ["asr-bridge/"],
+    "dependencies": [],
+    "test_criteria": [
+      "cd asr-bridge && go build -o bin/asr-bridge . 编译通过",
+      "main.go 不包含 refine 和 transcribe-sync 路由",
+      "env.go 搜索路径包含 ~/.claude/api-vault.env",
+      "go.mod 模块名为 meetingai/asr-bridge"
+    ],
+    "priority": 1,
+    "status": "pending",
+    "worktree_branch": null,
+    "retries": 0
+  },
+  {
+    "id": "feat-swift-adapt",
+    "description": "修改 Swift 侧三个文件适配 asr-bridge：ASRServerManager.swift 改路径/编译命令/健康检查端点；ASRClient.swift 完全重写为新 JSON WebSocket 协议；Config.swift 默认端口改 18089",
+    "files": ["Sources/ASRServerManager.swift", "Sources/ASRClient.swift", "Sources/Config.swift"],
+    "dependencies": [],
+    "test_criteria": [
+      "swift build 编译通过",
+      "ASRServerManager 指向项目内 asr-bridge/ 目录",
+      "ASRServerManager 健康检查端点为 /health",
+      "ASRClient 连接 /v1/stream 端点",
+      "ASRClient 音频用 base64 JSON 发送",
+      "Config 默认端口为 18089"
+    ],
+    "priority": 1,
+    "status": "pending",
+    "worktree_branch": null,
+    "retries": 0
+  }
+]
