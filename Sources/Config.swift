@@ -15,7 +15,7 @@ struct AppConfig {
         let jsonConfig = loadJSONConfig()
 
         return AppConfig(
-            asrServerPort: jsonConfig["asr"]?["serverPort"] as? Int ?? 18080,
+            asrServerPort: jsonConfig["asr"]?["serverPort"] as? Int ?? 18089,
             asrLanguage: jsonConfig["asr"]?["language"] as? String ?? "zh",
             autoAnalysisInterval: TimeInterval(jsonConfig["ai"]?["autoAnalysisIntervalSeconds"] as? Int ?? 300),
             aiModel: jsonConfig["ai"]?["model"] as? String ?? "MiniMax-M2.5",
