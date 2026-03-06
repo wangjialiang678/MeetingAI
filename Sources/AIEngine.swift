@@ -3,6 +3,13 @@ import os.log
 
 private let logger = Logger(subsystem: "MeetingAI", category: "AIEngine")
 
+struct StructuredAnalysis {
+    let shouldSpeak: Bool
+    let content: String
+    let kind: InsightCard.Kind
+    let topicKeywords: [String]
+}
+
 class AIEngine {
     private let apiKey: String
     private let model: String
@@ -60,6 +67,33 @@ class AIEngine {
         }
 
         return content
+    }
+
+    func analyzeStructured(systemPrompt: String, userContent: String) async throws -> StructuredAnalysis {
+        let rawText = try await analyze(systemPrompt: systemPrompt, userContent: userContent)
+
+        guard let data = rawText.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let shouldSpeak = json["should_speak"] as? Bool,
+              let content = json["content"] as? String else {
+            return StructuredAnalysis(
+                shouldSpeak: true,
+                content: rawText,
+                kind: .insight,
+                topicKeywords: []
+            )
+        }
+
+        let rawKind = (json["kind"] as? String) ?? "insight"
+        let kind = InsightCard.Kind(rawValue: rawKind) ?? .insight
+        let topicKeywords = (json["topic_keywords"] as? [String]) ?? []
+
+        return StructuredAnalysis(
+            shouldSpeak: shouldSpeak,
+            content: content,
+            kind: kind,
+            topicKeywords: topicKeywords
+        )
     }
 
     enum AIError: LocalizedError {
