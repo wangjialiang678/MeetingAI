@@ -1,0 +1,81 @@
+client:
+  name: basic
+  file-system: device-agnostic
+tools: {}
+targets:
+  "MeetingAI-arm64-apple-macosx15.0-debug.exe": ["<MeetingAI-arm64-apple-macosx15.0-debug.exe>"]
+  "MeetingAI-arm64-apple-macosx15.0-debug.module": ["<MeetingAI-arm64-apple-macosx15.0-debug.module>"]
+  "PackageStructure": ["<PackageStructure>"]
+  "main": ["<MeetingAI-arm64-apple-macosx15.0-debug.exe>","<MeetingAI-arm64-apple-macosx15.0-debug.module>"]
+  "test": ["<MeetingAI-arm64-apple-macosx15.0-debug.exe>","<MeetingAI-arm64-apple-macosx15.0-debug.module>"]
+default: "main"
+nodes:
+  "/Users/michael/projects/自用小工具/会议中AI给建议/Sources/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+  "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI":
+    is-mutated: true
+commands:
+  "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI-entitlement.plist":
+    tool: write-auxiliary-file
+    inputs: ["<entitlement-plist>","<com.apple.security.get-task-allow>"]
+    outputs: ["/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI-entitlement.plist"]
+    description: "Write auxiliary file /Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI-entitlement.plist"
+
+  "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/AIEngine.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/ASRClient.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/ASRServerManager.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/AudioRecorder.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/ChatView.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/Config.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/ContentView.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/MeetingViewModel.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/Models.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/SettingsView.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/TranscriptView.swift"]
+    outputs: ["/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/sources"]
+    description: "Write auxiliary file /Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/sources"
+
+  "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.product/Objects.LinkFileList":
+    tool: write-auxiliary-file
+    inputs: ["<link-file-list>","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/AIEngine.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ASRClient.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ASRServerManager.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/AudioRecorder.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ChatView.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/Config.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ContentView.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/MeetingViewModel.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/Models.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/SettingsView.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/TranscriptView.swift.o"]
+    outputs: ["/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.product/Objects.LinkFileList"]
+    description: "Write auxiliary file /Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.product/Objects.LinkFileList"
+
+  "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt":
+    tool: write-auxiliary-file
+    inputs: ["<swift-get-version>","/Library/Developer/CommandLineTools/usr/bin/swiftc"]
+    outputs: ["/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"]
+    always-out-of-date: "true"
+    description: "Write auxiliary file /Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+
+  "<MeetingAI-arm64-apple-macosx15.0-debug.exe>":
+    tool: phony
+    inputs: ["<MeetingAI-arm64-apple-macosx15.0-debug.exe-CodeSigning>"]
+    outputs: ["<MeetingAI-arm64-apple-macosx15.0-debug.exe>"]
+
+  "<MeetingAI-arm64-apple-macosx15.0-debug.module>":
+    tool: phony
+    inputs: ["/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/AIEngine.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ASRClient.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ASRServerManager.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/AudioRecorder.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ChatView.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/Config.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ContentView.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/MeetingViewModel.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/Models.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/SettingsView.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/TranscriptView.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/Modules/MeetingAI.swiftmodule"]
+    outputs: ["<MeetingAI-arm64-apple-macosx15.0-debug.module>"]
+
+  "C.MeetingAI-arm64-apple-macosx15.0-debug.exe":
+    tool: shell
+    inputs: ["/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/AIEngine.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ASRClient.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ASRServerManager.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/AudioRecorder.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ChatView.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/Config.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ContentView.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/MeetingViewModel.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/Models.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/SettingsView.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/TranscriptView.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.product/Objects.LinkFileList"]
+    outputs: ["/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI"]
+    description: "Linking ./.build/arm64-apple-macosx/debug/MeetingAI"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-L","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug","-o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI","-module-name","MeetingAI","-Xlinker","-no_warn_duplicate_libraries","-emit-executable","-Xlinker","-alias","-Xlinker","_MeetingAI_main","-Xlinker","_main","-Xlinker","-rpath","-Xlinker","@loader_path","@/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.product/Objects.LinkFileList","-target","arm64-apple-macosx14.0","-Xlinker","-add_ast_path","-Xlinker","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/Modules/MeetingAI.swiftmodule","-F","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xlinker","-rpath","-Xlinker","/Library/Developer/CommandLineTools/Library/Developer/Frameworks"]
+
+  "C.MeetingAI-arm64-apple-macosx15.0-debug.exe-entitlements":
+    tool: shell
+    inputs: ["/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI-entitlement.plist"]
+    outputs: ["<MeetingAI-arm64-apple-macosx15.0-debug.exe-CodeSigning>"]
+    description: "Applying debug entitlements to ./.build/arm64-apple-macosx/debug/MeetingAI"
+    args: ["codesign","--force","--sign","-","--entitlements","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI-entitlement.plist","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI"]
+
+  "C.MeetingAI-arm64-apple-macosx15.0-debug.module":
+    tool: shell
+    inputs: ["/Users/michael/projects/自用小工具/会议中AI给建议/Sources/AIEngine.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/ASRClient.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/ASRServerManager.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/AudioRecorder.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/ChatView.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/Config.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/ContentView.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/MeetingViewModel.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/Models.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/SettingsView.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Sources/TranscriptView.swift","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/sources"]
+    outputs: ["/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/AIEngine.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ASRClient.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ASRServerManager.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/AudioRecorder.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ChatView.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/Config.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ContentView.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/MeetingViewModel.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/Models.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/SettingsView.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/TranscriptView.swift.o","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/Modules/MeetingAI.swiftmodule"]
+    description: "Compiling Swift Module 'MeetingAI' (11 sources)"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-module-name","MeetingAI","-emit-dependencies","-emit-module","-emit-module-path","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/Modules/MeetingAI.swiftmodule","-output-file-map","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/output-file-map.json","-incremental","-c","@/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/sources","-I","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx14.0","-enable-batch-mode","-index-store-path","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-j8","-DSWIFT_PACKAGE","-DDEBUG","-module-cache-path","/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-Xfrontend","-entry-point-function-name","-Xfrontend","MeetingAI_main","-swift-version","5","-F","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xcc","-isysroot","-Xcc","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-Xcc","-fPIC","-Xcc","-g","-package-name","会议中ai给建议"]
+
+  "PackageStructure":
+    tool: package-structure-tool
+    inputs: ["/Users/michael/projects/自用小工具/会议中AI给建议/Sources/","/Users/michael/projects/自用小工具/会议中AI给建议/Package.swift","/Users/michael/projects/自用小工具/会议中AI给建议/Package.resolved"]
+    outputs: ["<PackageStructure>"]
+    description: "Planning build"
+    allow-missing-inputs: true
+

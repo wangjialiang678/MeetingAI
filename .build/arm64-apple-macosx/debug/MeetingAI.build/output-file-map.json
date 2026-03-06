@@ -1,0 +1,71 @@
+{
+  "": {
+    "swift-dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/master.swiftdeps"
+  },
+  "/Users/michael/projects/自用小工具/会议中AI给建议/Sources/AIEngine.swift": {
+    "dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/AIEngine.d",
+    "object": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/AIEngine.swift.o",
+    "swiftmodule": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/AIEngine~partial.swiftmodule",
+    "swift-dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/AIEngine.swiftdeps"
+  },
+  "/Users/michael/projects/自用小工具/会议中AI给建议/Sources/ASRClient.swift": {
+    "dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ASRClient.d",
+    "object": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ASRClient.swift.o",
+    "swiftmodule": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ASRClient~partial.swiftmodule",
+    "swift-dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ASRClient.swiftdeps"
+  },
+  "/Users/michael/projects/自用小工具/会议中AI给建议/Sources/ASRServerManager.swift": {
+    "dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ASRServerManager.d",
+    "object": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ASRServerManager.swift.o",
+    "swiftmodule": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ASRServerManager~partial.swiftmodule",
+    "swift-dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ASRServerManager.swiftdeps"
+  },
+  "/Users/michael/projects/自用小工具/会议中AI给建议/Sources/AudioRecorder.swift": {
+    "dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/AudioRecorder.d",
+    "object": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/AudioRecorder.swift.o",
+    "swiftmodule": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/AudioRecorder~partial.swiftmodule",
+    "swift-dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/AudioRecorder.swiftdeps"
+  },
+  "/Users/michael/projects/自用小工具/会议中AI给建议/Sources/ChatView.swift": {
+    "dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ChatView.d",
+    "object": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ChatView.swift.o",
+    "swiftmodule": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ChatView~partial.swiftmodule",
+    "swift-dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ChatView.swiftdeps"
+  },
+  "/Users/michael/projects/自用小工具/会议中AI给建议/Sources/Config.swift": {
+    "dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/Config.d",
+    "object": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/Config.swift.o",
+    "swiftmodule": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/Config~partial.swiftmodule",
+    "swift-dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/Config.swiftdeps"
+  },
+  "/Users/michael/projects/自用小工具/会议中AI给建议/Sources/ContentView.swift": {
+    "dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ContentView.d",
+    "object": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ContentView.swift.o",
+    "swiftmodule": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ContentView~partial.swiftmodule",
+    "swift-dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/ContentView.swiftdeps"
+  },
+  "/Users/michael/projects/自用小工具/会议中AI给建议/Sources/MeetingViewModel.swift": {
+    "dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/MeetingViewModel.d",
+    "object": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/MeetingViewModel.swift.o",
+    "swiftmodule": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/MeetingViewModel~partial.swiftmodule",
+    "swift-dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/MeetingViewModel.swiftdeps"
+  },
+  "/Users/michael/projects/自用小工具/会议中AI给建议/Sources/Models.swift": {
+    "dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/Models.d",
+    "object": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/Models.swift.o",
+    "swiftmodule": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/Models~partial.swiftmodule",
+    "swift-dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/Models.swiftdeps"
+  },
+  "/Users/michael/projects/自用小工具/会议中AI给建议/Sources/SettingsView.swift": {
+    "dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/SettingsView.d",
+    "object": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/SettingsView.swift.o",
+    "swiftmodule": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/SettingsView~partial.swiftmodule",
+    "swift-dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/SettingsView.swiftdeps"
+  },
+  "/Users/michael/projects/自用小工具/会议中AI给建议/Sources/TranscriptView.swift": {
+    "dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/TranscriptView.d",
+    "object": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/TranscriptView.swift.o",
+    "swiftmodule": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/TranscriptView~partial.swiftmodule",
+    "swift-dependencies": "/Users/michael/projects/自用小工具/会议中AI给建议/.build/arm64-apple-macosx/debug/MeetingAI.build/TranscriptView.swiftdeps"
+  }
+}
