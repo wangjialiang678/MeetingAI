@@ -15,9 +15,6 @@ class MeetingViewModel: ObservableObject {
     @Published var isAnalyzing = false
     @Published var aiMode: AIMode = .advisor
 
-    // Temporary backward compat — removed when frontend task merges
-    var chatMessages: [InsightCard] { insightCards }
-
     private var audioRecorder: AudioRecorder?
     private var asrClient: ASRClient?
     private var aiEngine: AIEngine?
@@ -533,10 +530,6 @@ class MeetingViewModel: ObservableObject {
         5. topic_keywords 提取 3-5 个当前讨论的核心关键词
         6. 不要重复上次说过的内容\(synthNote)
         """
-    }
-
-    static func buildDefaultSystemPrompt(count: Int, elapsedMin: Int) -> String {
-        buildDefaultSystemPrompt(count: count, elapsedMin: elapsedMin, mode: .advisor)
     }
 
     private func buildAnalysisUserContent() -> String {

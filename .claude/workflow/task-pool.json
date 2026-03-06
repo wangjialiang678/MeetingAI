@@ -31,7 +31,7 @@
       "swift build 编译通过"
     ],
     "priority": 2,
-    "status": "pending",
+    "status": "done",
     "coder": "claude-code",
     "worktree_branch": "feat/frontend-card-ui",
     "retries": 0

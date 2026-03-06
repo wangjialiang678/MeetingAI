@@ -59,6 +59,15 @@ struct ContentView: View {
                     .help("导入历史转写文件")
                 }
 
+                // AI Mode picker
+                Picker("模式", selection: $viewModel.aiMode) {
+                    ForEach(AIMode.allCases, id: \.self) { mode in
+                        Text(mode.displayName).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 200)
+
                 // Settings button
                 Button {
                     showSettings = true
@@ -86,7 +95,7 @@ struct ContentView: View {
                 TranscriptView()
                     .frame(minWidth: 300, idealWidth: 500)
 
-                ChatView()
+                InsightFeedView()
                     .frame(minWidth: 400, idealWidth: 700)
             }
         }

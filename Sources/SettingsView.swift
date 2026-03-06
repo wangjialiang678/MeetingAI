@@ -4,7 +4,7 @@ struct SettingsView: View {
     @AppStorage("customSystemPrompt") private var customPrompt: String = ""
     @Environment(\.dismiss) private var dismiss
 
-    private let defaultPromptPreview = MeetingViewModel.buildDefaultSystemPrompt(count: 1, elapsedMin: 5)
+    private let defaultPromptPreview = MeetingViewModel.buildDefaultSystemPrompt(count: 1, elapsedMin: 5, mode: .advisor)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {

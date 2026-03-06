@@ -44,20 +44,3 @@ enum AIMode: String, CaseIterable {
         }
     }
 }
-
-// Temporary — removed when frontend task merges
-typealias ChatMessage = InsightCard
-
-extension InsightCard {
-    enum MessageRole {
-        case system, user, assistant
-    }
-
-    var role: MessageRole {
-        switch kind {
-        case .insight: return .assistant
-        case .reply: return .assistant
-        case .summary: return .assistant
-        }
-    }
-}
