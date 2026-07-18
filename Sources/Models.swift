@@ -5,6 +5,16 @@ struct TranscriptEntry: Identifiable {
     let timestamp: Date
     let text: String
     let isFinal: Bool
+    /// 条目创建时间。活跃 partial 每次更新会刷新 timestamp，firstTimestamp 保持首次出现的时间，
+    /// 供滚动替换按时间比例估算已覆盖前缀
+    let firstTimestamp: Date
+
+    init(timestamp: Date, text: String, isFinal: Bool, firstTimestamp: Date? = nil) {
+        self.timestamp = timestamp
+        self.text = text
+        self.isFinal = isFinal
+        self.firstTimestamp = firstTimestamp ?? timestamp
+    }
 }
 
 struct InsightCard: Identifiable {

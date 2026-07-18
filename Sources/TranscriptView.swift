@@ -110,12 +110,18 @@ struct TranscriptView: View {
         return viewModel.transcriptEntries.filter { !$0.isFinal || $0.timestamp > cutoff }
     }
 
-    /// 活跃 partial 会累积整场文本；有说话人覆盖时只显示尾部，避免与说话人段落大面积重复
+    /// 活跃 partial 会累积整场文本；有说话人覆盖时按时间比例裁掉已覆盖前缀，只显示未覆盖尾巴
     private func displayText(for entry: TranscriptEntry) -> String {
-        guard !viewModel.speakerBackfillSegments.isEmpty, !entry.isFinal, entry.text.count > 600 else {
+        guard !viewModel.speakerBackfillSegments.isEmpty, !entry.isFinal else {
             return entry.text
         }
-        return "…" + entry.text.suffix(600)
+        let visible = TranscriptDisplayTrimmer.visibleSuffix(
+            text: entry.text,
+            firstTimestamp: entry.firstTimestamp,
+            lastTimestamp: entry.timestamp,
+            coverageCutoff: viewModel.speakerCoverageCutoffDate
+        )
+        return visible.count < entry.text.count ? "…" + visible : visible
     }
 
     private func formatTime(_ date: Date) -> String {

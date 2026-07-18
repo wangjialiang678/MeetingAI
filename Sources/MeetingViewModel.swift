@@ -576,7 +576,8 @@ class MeetingViewModel: ObservableObject {
         // Update or append entry
         if isFinal {
             if let lastIdx = transcriptEntries.indices.last, !transcriptEntries[lastIdx].isFinal {
-                transcriptEntries[lastIdx] = TranscriptEntry(timestamp: timestamp, text: text, isFinal: true)
+                let firstSeen = transcriptEntries[lastIdx].firstTimestamp
+                transcriptEntries[lastIdx] = TranscriptEntry(timestamp: timestamp, text: text, isFinal: true, firstTimestamp: firstSeen)
             } else {
                 transcriptEntries.append(TranscriptEntry(timestamp: timestamp, text: text, isFinal: true))
             }
@@ -584,7 +585,8 @@ class MeetingViewModel: ObservableObject {
             appendToSessionFile(text: text, timestamp: timestamp)
         } else {
             if let lastIdx = transcriptEntries.indices.last, !transcriptEntries[lastIdx].isFinal {
-                transcriptEntries[lastIdx] = TranscriptEntry(timestamp: timestamp, text: text, isFinal: false)
+                let firstSeen = transcriptEntries[lastIdx].firstTimestamp
+                transcriptEntries[lastIdx] = TranscriptEntry(timestamp: timestamp, text: text, isFinal: false, firstTimestamp: firstSeen)
             } else {
                 transcriptEntries.append(TranscriptEntry(timestamp: timestamp, text: text, isFinal: false))
             }
