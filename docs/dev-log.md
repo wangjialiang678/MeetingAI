@@ -1,5 +1,17 @@
 # 开发过程日志
 
+## 2026-07-18 - 按需发言 + TranscriptStore + 事件日志降噪（彩排复盘三项落地）
+
+### 变更（对应彩排复盘三决策：发言按需、2/3 直接改）
+- **按需发言**：顾问模式 prompt 改为默认沉默（仅关键盲点/方向性风险/行动项/真正新信息才发言，不复述共识）；最小输出间隔 120s→180s；连续沉默强制发声兜底 3 次→5 次
+- **TranscriptStore**：新增 `Sources/TranscriptStore.swift`，停止会议时用全部 entries（partial+final）重写 `.txt` 为完整版（导入的历史条目除外）；会议中 final 追加行为保留作崩溃兜底。解决 6917 partial 对 2 final 下 `.txt` 名存实亡的问题
+- **skip 事件降噪**：自动触发的 `analysis_skipped` 在两次分析之间只记录一次（手动触发始终记录且有 UI 提示）；"暂无新转写内容"提示改为仅手动触发时显示
+
+### 验证
+- RED：`transcript_store_smoke` → FAIL（文件不存在）；GREEN → PASS（partial-only 完整性、空行跳过、历史条目排除、时间格式）
+- `swift build` + `bash tests/run-p0-p1.sh`（新增 P0-18、P1-33/34）+ `bash tests/run-p2-ui.sh` → 全部 PASS
+- 降噪与按需发言的真实效果待下一场会议由后台监控验证（skip 事件量、发言频率）
+
 ## 2026-07-18 - 31 分钟真实彩排复盘 + 说话人分离离线补跑
 
 ### 观察（session 2026-07-18-16-30-12，31 分钟真实多人会议）

@@ -1,0 +1,90 @@
+import Foundation
+
+enum TranscriptStoreSmokeFailure: Error, CustomStringConvertible {
+    case failed(String)
+
+    var description: String {
+        switch self {
+        case .failed(let message):
+            return message
+        }
+    }
+}
+
+@main
+struct TranscriptStoreSmoke {
+    static func main() {
+        do {
+            try testPartialOnlyEntriesProduceCompleteText()
+            try testEmptyTextEntriesAreSkipped()
+            try testImportedHistoricalEntriesAreExcluded()
+            try testTimestampFormat()
+            try testEmptyEntriesProduceEmptyText()
+            print("Transcript store smoke tests PASS")
+        } catch {
+            fputs("Transcript store smoke tests FAIL: \(error)\n", stderr)
+            Foundation.exit(1)
+        }
+    }
+
+    private static func expect(_ condition: @autoclosure () -> Bool, _ message: String) throws {
+        if !condition() {
+            throw TranscriptStoreSmokeFailure.failed(message)
+        }
+    }
+
+    private static func date(_ hour: Int, _ minute: Int, _ second: Int) -> Date {
+        var components = DateComponents()
+        components.year = 2026
+        components.month = 7
+        components.day = 18
+        components.hour = hour
+        components.minute = minute
+        components.second = second
+        return Calendar.current.date(from: components)!
+    }
+
+    private static func testPartialOnlyEntriesProduceCompleteText() throws {
+        // partial-only 长会：.txt 也必须有完整内容，不再只认 final
+        let entries = [
+            TranscriptEntry(timestamp: date(15, 0, 1), text: "第一段还在临时状态的转写内容", isFinal: false),
+            TranscriptEntry(timestamp: date(15, 1, 2), text: "第二段最终转写", isFinal: true),
+            TranscriptEntry(timestamp: date(15, 2, 3), text: "第三段仍是 partial", isFinal: false)
+        ]
+        let text = TranscriptStore.completeTranscriptText(entries: entries)
+        try expect(text.contains("第一段还在临时状态的转写内容"), "partial content must be included")
+        try expect(text.contains("第二段最终转写"), "final content must be included")
+        try expect(text.contains("第三段仍是 partial"), "trailing partial must be included")
+        try expect(text.components(separatedBy: "\n").filter { !$0.isEmpty }.count == 3, "one line per entry")
+    }
+
+    private static func testEmptyTextEntriesAreSkipped() throws {
+        let entries = [
+            TranscriptEntry(timestamp: date(15, 0, 1), text: "   ", isFinal: false),
+            TranscriptEntry(timestamp: date(15, 0, 2), text: "有效内容", isFinal: true)
+        ]
+        let text = TranscriptStore.completeTranscriptText(entries: entries)
+        try expect(text.components(separatedBy: "\n").filter { !$0.isEmpty }.count == 1, "blank entries should be skipped")
+    }
+
+    private static func testImportedHistoricalEntriesAreExcluded() throws {
+        // 导入的历史转写（distantPast）不写入本场 .txt
+        let entries = [
+            TranscriptEntry(timestamp: .distantPast, text: "上一场会议导入的内容", isFinal: true),
+            TranscriptEntry(timestamp: date(15, 0, 2), text: "本场内容", isFinal: false)
+        ]
+        let text = TranscriptStore.completeTranscriptText(entries: entries)
+        try expect(!text.contains("上一场会议导入的内容"), "imported history must not enter this session's txt")
+        try expect(text.contains("本场内容"), "current session content must be present")
+    }
+
+    private static func testTimestampFormat() throws {
+        let entries = [TranscriptEntry(timestamp: date(9, 5, 7), text: "内容", isFinal: false)]
+        let text = TranscriptStore.completeTranscriptText(entries: entries)
+        try expect(text.hasPrefix("[09:05:07] "), "line should start with [HH:mm:ss] , got: \(text.prefix(15))")
+    }
+
+    private static func testEmptyEntriesProduceEmptyText() throws {
+        try expect(TranscriptStore.completeTranscriptText(entries: []).isEmpty, "no entries should produce empty text")
+    }
+}

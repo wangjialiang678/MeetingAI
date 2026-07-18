@@ -96,8 +96,10 @@ OSS_ACCESS_KEY_SECRET=...
 | 模式 | 文本增量触发 | 沉默触发（10s 检查一次） | 最小输出间隔 |
 |------|------------|------------|------------|
 | 观察者 | 不主动分析 | 不触发 | ∞（手动点击会提示切换模式） |
-| 顾问（默认） | ≥200 字 | 沉默 >60s 且新增 ≥50 字 | 120s |
+| 顾问（默认） | ≥200 字 | 沉默 >60s 且新增 ≥50 字 | 180s |
 | 研究员 | ≥100 字 | 沉默 >30s 且新增 ≥30 字 | 45s |
+
+按需发言原则（2026-07-18 用户决策）：顾问模式 prompt 默认沉默（should_speak=false），仅关键盲点/方向性风险/行动项/真正新信息才发言；连续沉默兜底 5 次才强制发声。
 
 - 兜底：距上次分析 >600s 且有新增内容
 - 手动触发被限流/重复时有可见系统提示；自动触发静默跳过（写 `analysis_skipped` 事件）
@@ -119,6 +121,6 @@ OSS_ACCESS_KEY_SECRET=...
 - SPM executableTarget 的 SwiftUI App 必须手动 `setActivationPolicy(.regular)` + `activate(ignoringOtherApps: true)`（见 ContentView init）
 - NVIDIA/Qwen 的 OpenAI-compatible 响应正文可能在 `message.reasoning_content` 而非 `content`，AIEngine 已兼容，勿回退
 - 本机 MP3 编码可能不可用，录音自动 fallback 单声道 WAV；产物检查看"文件非空"而不是"路径存在"
-- `.txt` 只写 final；partial-only 长会的完整内容靠 `.transcript.md`（TranscriptStore 统一重构仍在待办）
+- `.txt` 会议中按 final 追加（崩溃兜底），停止会议时由 `TranscriptStore` 用全部 entries（partial+final）重写为完整版；会议中的实时完整内容仍看 `.transcript.md`
 - Fun-ASR `speaker_id` 不保证跨 chunk 指同一真人；不同 speaker 的相同短句不去重（宁可重复不误删）
 - Fun-ASR 真实云端链路目前 BLOCKED：等 OSS bucket + 凭证配置（`MEETINGAI_REQUIRE_FUNASR_DIARIZATION=1` smoke 会返回 BLOCKED）

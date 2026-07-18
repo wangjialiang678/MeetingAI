@@ -60,6 +60,7 @@ class MeetingViewModel: ObservableObject {
     private var analysisCount = 0
     private var lastTopicKeywords: [String] = []
     private var consecutiveSilentCount = 0
+    private var didLogAutoSkipSinceLastAnalysis = false
 
     init() {
         config = AppConfig.load()
@@ -81,6 +82,7 @@ class MeetingViewModel: ObservableObject {
         lastTranscriptTime = .distantPast
         lastTopicKeywords = []
         consecutiveSilentCount = 0
+        didLogAutoSkipSinceLastAnalysis = false
         speakerBackfillSegments = []
         diarizationLoggedChunkIndices.removeAll()
         diarizationProcessingChunkIndices.removeAll()
@@ -211,6 +213,19 @@ class MeetingViewModel: ObservableObject {
         isServerRunning = false
 
         let savedTxt = sessionFileURL
+        if let savedTxt {
+            let completeText = TranscriptStore.completeTranscriptText(entries: transcriptEntries)
+            do {
+                try completeText.write(to: savedTxt, atomically: true, encoding: .utf8)
+                appendEvent("transcript_txt_finalized", fields: [
+                    "entries": transcriptEntries.count,
+                    "chars": completeText.count
+                ])
+            } catch {
+                logger.error("Failed to finalize complete txt: \(error.localizedDescription)")
+                appendEvent("transcript_txt_append_failed", fields: ["stage": "finalize", "error": error.localizedDescription])
+            }
+        }
         writeTranscriptMarkdownSnapshot()
         let savedTranscriptMarkdown = sessionTranscriptMarkdownURL
         appendEvent("transcript_markdown_saved", fields: [
@@ -240,6 +255,7 @@ class MeetingViewModel: ObservableObject {
         lastAnalysisTime = .distantPast
         lastTopicKeywords = []
         consecutiveSilentCount = 0
+        didLogAutoSkipSinceLastAnalysis = false
         sessionFileURL = nil
         sessionRecordingURL = nil
         sessionEventLogURL = nil
@@ -268,18 +284,18 @@ class MeetingViewModel: ObservableObject {
             if isRecording && source == "manual" {
                 appendSystemMessage("AI 正在分析中，请稍后再试。")
             }
-            appendEvent("analysis_skipped", fields: [
+            logSkipEventIfNeeded(source: source, fields: [
                 "source": source,
                 "reason": isRecording ? "already_analyzing" : "not_recording"
             ])
             return
         }
 
-        // Minimum output interval
+        // Minimum output interval（按需发言：顾问模式 2026-07-18 由 120s 调至 180s）
         let minInterval: TimeInterval
         switch aiMode {
         case .observer: minInterval = .infinity
-        case .advisor: minInterval = 120
+        case .advisor: minInterval = 180
         case .researcher: minInterval = 45
         }
         let elapsedSinceLastAnalysis = Date().timeIntervalSince(lastAnalysisTime)
@@ -287,7 +303,7 @@ class MeetingViewModel: ObservableObject {
             let minIntervalText = minInterval.isFinite ? "\(Int(minInterval))" : "infinity"
             let remainingSeconds = minInterval.isFinite ? max(1, Int(ceil(minInterval - elapsedSinceLastAnalysis))) : 0
             logger.debug("Analysis skipped: min interval not met (mode=\(self.aiMode.rawValue), interval=\(Int(elapsedSinceLastAnalysis))s/\(minIntervalText)s)")
-            appendEvent("analysis_skipped", fields: [
+            logSkipEventIfNeeded(source: source, fields: [
                 "source": source,
                 "reason": "min_interval",
                 "mode": aiMode.rawValue,
@@ -307,16 +323,19 @@ class MeetingViewModel: ObservableObject {
 
         let currentTextLength = totalTranscriptLength()
         guard currentTextLength > lastAnalysisTextLength else {
-            appendEvent("analysis_skipped", fields: [
+            logSkipEventIfNeeded(source: source, fields: [
                 "source": source,
                 "reason": "no_new_transcript",
                 "totalChars": currentTextLength
             ])
-            appendSystemMessage("暂无新转写内容可分析")
+            if source == "manual" {
+                appendSystemMessage("暂无新转写内容可分析")
+            }
             return
         }
 
         analysisCount += 1
+        didLogAutoSkipSinceLastAnalysis = false
         isAnalyzing = true
         let newChars = currentTextLength - lastAnalysisTextLength
         lastAnalysisTextLength = currentTextLength
@@ -415,7 +434,8 @@ class MeetingViewModel: ObservableObject {
                         "consecutiveSilentCount": consecutiveSilentCount
                     ])
                     // Force speak after 3 consecutive silences in advisor/researcher mode
-                    if aiMode != .observer && consecutiveSilentCount >= 3 {
+                    // 按需发言：连续沉默兜底从 3 次放宽到 5 次（2026-07-18 用户决策）
+                    if aiMode != .observer && consecutiveSilentCount >= 5 {
                         if let similarity = duplicateInsightSimilarity(result.content) {
                             logger.info("Force-speak insight discarded as near-duplicate, similarity=\(similarity, format: .fixed(precision: 2))")
                             appendEvent("analysis_discarded_duplicate", fields: [
@@ -596,6 +616,16 @@ class MeetingViewModel: ObservableObject {
 
     private func appendSystemMessage(_ content: String, execution: AnalysisExecutionMetadata? = nil) {
         appendCard(.system, content, execution: execution)
+    }
+
+    /// 降噪：自动触发的 skip 事件在两次分析之间只记录一次（手动触发始终记录）。
+    /// 此前每条 partial 到达都会写一条 min_interval skip，31 分钟真实会议产生了 4623 条噪声。
+    private func logSkipEventIfNeeded(source: String, fields: [String: Any]) {
+        if source != "manual" {
+            guard !didLogAutoSkipSinceLastAnalysis else { return }
+            didLogAutoSkipSinceLastAnalysis = true
+        }
+        appendEvent("analysis_skipped", fields: fields)
     }
 
     private func duplicateInsightSimilarity(_ content: String) -> Double? {
@@ -1295,7 +1325,7 @@ class MeetingViewModel: ObservableObject {
         case .observer:
             modeInstruction = "你处于观察模式。除非发现重大问题或被直接提问，否则 should_speak 设为 false。"
         case .advisor:
-            modeInstruction = "你处于顾问模式。有值得分享的洞察时才发言，不要面面俱到。"
+            modeInstruction = "你处于顾问模式。默认保持沉默（should_speak 设为 false）；仅当出现关键盲点、方向性风险、明确行动项或真正的新信息时才发言。不要复述共识、不要为了总结而总结、不要刷存在感。"
         case .researcher:
             modeInstruction = "你处于研究员模式。积极发言，主动提出问题和研究方向。"
         }
@@ -1318,7 +1348,7 @@ class MeetingViewModel: ObservableObject {
         }
 
         行为原则：
-        1. 先判断「这里有什么真正值得说的？」— 如果没有，should_speak 设为 false
+        1. 先判断「这里有什么真正值得说的？」— 如果没有，should_speak 设为 false；宁可沉默，也不要输出低信息量内容
         2. 有内容时，选一个最想深挖的角度切入
         3. 观察之后，主动说出值得追问或讨论的方向
         4. kind 通常是 "insight"，阶段小结时用 "summary"

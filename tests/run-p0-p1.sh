@@ -85,6 +85,11 @@ swiftc Sources/ASRBridgePortGuard.swift tests/asr_stale_bridge_policy_smoke.swif
   && ./.build/asr_stale_bridge_policy_smoke \
   && echo "PASS" || { echo "FAIL"; exit 1; }
 
+echo "[P0-18] Transcript store smoke tests..."
+swiftc Sources/Models.swift Sources/TranscriptStore.swift tests/transcript_store_smoke.swift -o .build/transcript_store_smoke \
+  && ./.build/transcript_store_smoke \
+  && echo "PASS" || { echo "FAIL"; exit 1; }
+
 echo ""
 echo "=== P1: Code Correctness ==="
 FAIL=0
@@ -132,6 +137,8 @@ check "P1-29 bridge binds loopback" "grep -q '127.0.0.1:\" + port' asr-bridge/ma
 check "P1-30 bridge health identity verified" "grep -q 'meetingai-asr-bridge' asr-bridge/main.go && grep -q 'meetingai-asr-bridge' Sources/ASRServerManager.swift"
 check "P1-31 default backend is http" "grep -q '?? .http' Sources/MeetingViewModel.swift"
 check "P1-32 ai api key env configurable" "grep -q 'apiKeyEnv' Sources/Config.swift"
+check "P1-33 complete txt finalize wired" "grep -q 'TranscriptStore.completeTranscriptText' Sources/MeetingViewModel.swift"
+check "P1-34 auto skip event denoised" "grep -q 'logSkipEventIfNeeded' Sources/MeetingViewModel.swift"
 
 echo ""
 if [ $FAIL -eq 0 ]; then
