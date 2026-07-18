@@ -174,7 +174,7 @@ fi
 TRANSCRIPT_READY=0
 for _ in $(seq 1 12); do
   TRANSCRIPT_DUMP=$(ax_query -e 'tell application "System Events" to tell process "MeetingAI" to return name of every UI element of group 1 of splitter group 1 of group 1 of window 1')
-  if grep -q '3 条' <<<"$TRANSCRIPT_DUMP"; then
+  if grep -qE '3 段|3 条' <<<"$TRANSCRIPT_DUMP"; then
     TRANSCRIPT_READY=1
     break
   fi
