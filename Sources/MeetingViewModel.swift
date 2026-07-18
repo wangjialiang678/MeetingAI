@@ -13,7 +13,13 @@ class MeetingViewModel: ObservableObject {
     @Published var recordingDuration: TimeInterval = 0
     @Published var userInput = ""
     @Published var isAnalyzing = false
-    @Published var aiMode: AIMode = .advisor
+    @Published var aiMode: AIMode = .advisor {
+        didSet {
+            guard oldValue != aiMode else { return }
+            logger.info("AI mode changed: \(oldValue.rawValue) -> \(self.aiMode.rawValue)")
+            appendEvent("ai_mode_changed", fields: ["from": oldValue.rawValue, "to": aiMode.rawValue])
+        }
+    }
     @Published var analysisActivityText: String?
     @Published var lastAnalysisStatusText: String = "后端：Hybrid"
     @Published var speakerBackfillSegments: [DiarizedTranscriptSegment] = []
@@ -1028,6 +1034,7 @@ class MeetingViewModel: ObservableObject {
         [
             "asrServerPort": config.asrServerPort,
             "asrLanguage": config.asrLanguage,
+            "aiMode": aiMode.rawValue,
             "aiModel": config.aiModel,
             "aiBaseURLHost": URL(string: config.aiBaseURL)?.host ?? "unknown",
             "analysisBackend": currentAnalysisBackend().rawValue,
