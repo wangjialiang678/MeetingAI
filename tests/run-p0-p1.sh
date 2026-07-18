@@ -90,6 +90,11 @@ swiftc Sources/Models.swift Sources/TranscriptStore.swift tests/transcript_store
   && ./.build/transcript_store_smoke \
   && echo "PASS" || { echo "FAIL"; exit 1; }
 
+echo "[P0-19] Transcript refiner smoke tests..."
+swiftc Sources/Models.swift Sources/AIEngine.swift Sources/DiarizationModels.swift Sources/TranscriptRefiner.swift tests/transcript_refiner_smoke.swift -o .build/transcript_refiner_smoke \
+  && ./.build/transcript_refiner_smoke \
+  && echo "PASS" || { echo "FAIL"; exit 1; }
+
 echo ""
 echo "=== P1: Code Correctness ==="
 FAIL=0
@@ -139,6 +144,8 @@ check "P1-31 default backend is http" "grep -q '?? .http' Sources/MeetingViewMod
 check "P1-32 ai api key env configurable" "grep -q 'apiKeyEnv' Sources/Config.swift"
 check "P1-33 complete txt finalize wired" "grep -q 'TranscriptStore.completeTranscriptText' Sources/MeetingViewModel.swift"
 check "P1-34 auto skip event denoised" "grep -q 'logSkipEventIfNeeded' Sources/MeetingViewModel.swift"
+check "P1-35 chunk refiner wired" "grep -q 'sentenceRefiner' Sources/DiarizationPipeline.swift && grep -q 'refineDiarizedSentences' Sources/MeetingViewModel.swift"
+check "P1-36 rolling transcript view" "grep -q 'realtimeTailEntries' Sources/TranscriptView.swift && grep -q 'speakerCoverageCutoffDate' Sources/MeetingViewModel.swift"
 
 echo ""
 if [ $FAIL -eq 0 ]; then

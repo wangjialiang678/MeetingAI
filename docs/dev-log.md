@@ -1,5 +1,24 @@
 # 开发过程日志
 
+## 2026-07-18 - 会议中滚动替代 + 逐分片 LLM 纠错（用户需求）
+
+### 需求
+- 用户："说话人分离回填后，实时转写就可以被替代了……在会议中，就会不断地替代、纠正；对比两份转写用大模型纠正明显识别错误（置信度高）"
+- 两份转写来自不同引擎（实时 qwen3-asr / 非实时 Fun-ASR），错误互不相关，交叉验证有效
+
+### 变更
+- 新增 `Sources/TranscriptRefiner.swift`：纠错提示词（保守：仅高置信度同音字/专名/数字，禁止润色/改写/增删）+ 修正解析（只接受文本替换，数量/顺序/时间戳/说话人不变；任何异常退回原句）
+- `DiarizationPipeline` 增加可选 `sentenceRefiner` 钩子：分片识别完成后、合并前调用；有修正时写 `diarization_chunk_refined` 事件
+- `MeetingViewModel.refineDiarizedSentences`：取该分片时间窗内的实时转写做参考，调 GLM（`AIEngine.rawCompletion`）纠错；失败原样返回不阻塞；fixture 模式跳过
+- `TranscriptView` 改为滚动替换布局：说话人段落（已处理）为主体，实时转写只显示未覆盖尾巴（活跃 partial 截尾 600 字防重复）；计数改为"N 句已处理 · M 段实时"（修掉此前"0 条"误导）
+- `MeetingViewModel` 新增 `meetingStartDate` / `speakerCoverageCutoffDate` 支撑时间对齐
+
+### 验证
+- `transcript_refiner_smoke`（7 用例：提示词、修正应用、围栏响应、非法响应回退、越界忽略、时间戳/说话人不变、上下文截断）→ PASS
+- `swift build` + `bash tests/run-p0-p1.sh`（新增 P0-19、P1-35/36）→ PASS
+- P2 与真实效果验证待当前会议（17:47 场）结束后进行
+- 原始数据不受影响：`.diarized.jsonl`/`.transcript.md` 记录的是纠错后的句子（含事件审计），实时转写原文仍完整落盘 `.txt`
+
 ## 2026-07-18 - DashScope NO_PROXY 直连（代理断连风暴处置）
 
 ### 背景

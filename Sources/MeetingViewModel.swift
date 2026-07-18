@@ -67,6 +67,14 @@ class MeetingViewModel: ObservableObject {
     private var lastTopicKeywords: [String] = []
     private var consecutiveSilentCount = 0
     private var didLogAutoSkipSinceLastAnalysis = false
+    private(set) var meetingStartDate: Date?
+
+    /// 说话人分离已覆盖到的绝对时间；早于它的实时 final 条目在 UI 中被说话人段落替代
+    var speakerCoverageCutoffDate: Date? {
+        guard let meetingStartDate,
+              let maxEnd = speakerBackfillSegments.map(\.endMilliseconds).max() else { return nil }
+        return meetingStartDate.addingTimeInterval(TimeInterval(maxEnd) / 1_000)
+    }
 
     init() {
         config = AppConfig.load()
@@ -89,6 +97,7 @@ class MeetingViewModel: ObservableObject {
         lastTopicKeywords = []
         consecutiveSilentCount = 0
         didLogAutoSkipSinceLastAnalysis = false
+        meetingStartDate = Date()
         speakerBackfillSegments = []
         diarizationLoggedChunkIndices.removeAll()
         diarizationProcessingChunkIndices.removeAll()
@@ -859,6 +868,12 @@ class MeetingViewModel: ObservableObject {
                     guard let self, self.diarizationSessionGate.accepts(sessionGeneration) else { return }
                     self.speakerBackfillSegments = segments
                     self.writeTranscriptMarkdownSnapshot()
+                },
+                sentenceRefiner: { [weak self] chunk, sentences in
+                    guard let self, self.diarizationSessionGate.accepts(sessionGeneration) else {
+                        return (sentences, 0)
+                    }
+                    return await self.refineDiarizedSentences(chunk: chunk, sentences: sentences)
                 }
             )
         } catch {
@@ -903,6 +918,37 @@ class MeetingViewModel: ObservableObject {
             "state": chunk.state.rawValue,
             "reason": diarizationPipeline == nil ? "upload_provider_not_configured" : "queued_for_upload"
         ])
+    }
+
+    /// 逐分片 LLM 纠错：用该时间窗前后的实时转写交叉验证 Fun-ASR 句子。
+    /// 任何失败都返回原句（保守，不阻塞回填）。
+    private func refineDiarizedSentences(
+        chunk: DiarizationAudioChunk,
+        sentences: [ProviderDiarizedSentence]
+    ) async -> (sentences: [ProviderDiarizedSentence], corrections: Int) {
+        guard !config.uiFixtureMode, let startDate = meetingStartDate else { return (sentences, 0) }
+        let windowEnd = startDate.addingTimeInterval(TimeInterval(chunk.endMilliseconds) / 1_000 + 30)
+        let realtimeContext = transcriptEntries
+            .filter { $0.timestamp != .distantPast && $0.timestamp <= windowEnd }
+            .map(\.text)
+            .joined(separator: "\n")
+        guard !realtimeContext.isEmpty else { return (sentences, 0) }
+
+        let engine = makeAIEngine(fixtureMode: false)
+        do {
+            let raw = try await engine.rawCompletion(
+                systemPrompt: TranscriptRefiner.buildSystemPrompt(),
+                userContent: TranscriptRefiner.buildUserContent(sentences: sentences, realtimeContext: realtimeContext)
+            )
+            let refined = TranscriptRefiner.applyCorrections(raw, to: sentences)
+            if refined.corrections > 0 {
+                logger.info("Chunk \(chunk.index) refined: \(refined.corrections) corrections")
+            }
+            return refined
+        } catch {
+            logger.warning("Chunk \(chunk.index) refine failed, keeping original: \(error.localizedDescription)")
+            return (sentences, 0)
+        }
     }
 
     private func startDiarizationProcessingIfConfigured(_ chunk: DiarizationAudioChunk) {

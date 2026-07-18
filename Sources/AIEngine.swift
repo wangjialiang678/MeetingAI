@@ -147,6 +147,11 @@ class AIEngine {
 
     /// 从模型输出中提取结构化 JSON 文本。
     /// GLM 等模型习惯把 JSON 包在 ```json 代码围栏里，或在 JSON 前后加说明文字。
+    /// 轻量 HTTP 补全（转写纠错等辅助任务用），不走洞察结构化流程
+    func rawCompletion(systemPrompt: String, userContent: String) async throws -> String {
+        try await analyzeViaHTTP(systemPrompt: systemPrompt, userContent: userContent)
+    }
+
     static func extractStructuredJSONText(_ raw: String) -> String {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
 

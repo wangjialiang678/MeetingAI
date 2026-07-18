@@ -11,6 +11,8 @@ actor DiarizationPipeline {
     private let provider: DiarizationTranscriptionProvider
     private let speakerCount: Int?
     private let onSegmentsUpdated: (([DiarizedTranscriptSegment]) -> Void)?
+    /// 可选逐分片纠错（LLM 交叉验证实时转写）；失败/超时返回原句，不阻塞回填
+    private let sentenceRefiner: ((DiarizationAudioChunk, [ProviderDiarizedSentence]) async -> (sentences: [ProviderDiarizedSentence], corrections: Int))?
 
     private var completedResults: [Int: DiarizationChunkResult] = [:]
 
@@ -21,7 +23,8 @@ actor DiarizationPipeline {
         uploader: DiarizationAudioUploader,
         provider: DiarizationTranscriptionProvider,
         speakerCount: Int? = nil,
-        onSegmentsUpdated: (([DiarizedTranscriptSegment]) -> Void)? = nil
+        onSegmentsUpdated: (([DiarizedTranscriptSegment]) -> Void)? = nil,
+        sentenceRefiner: ((DiarizationAudioChunk, [ProviderDiarizedSentence]) async -> (sentences: [ProviderDiarizedSentence], corrections: Int))? = nil
     ) {
         self.sessionFileURL = sessionFileURL
         self.eventLogURL = eventLogURL
@@ -30,6 +33,7 @@ actor DiarizationPipeline {
         self.provider = provider
         self.speakerCount = speakerCount
         self.onSegmentsUpdated = onSegmentsUpdated
+        self.sentenceRefiner = sentenceRefiner
     }
 
     @discardableResult
@@ -64,7 +68,17 @@ actor DiarizationPipeline {
                 "remoteFile": DiarizationLogSanitizer.describeRemoteURL(task.remoteFileURL)
             ])
 
-            let result = try await provider.waitForResult(task: task, chunk: chunk)
+            var result = try await provider.waitForResult(task: task, chunk: chunk)
+            if let sentenceRefiner, !result.sentences.isEmpty {
+                let refined = await sentenceRefiner(chunk, result.sentences)
+                if refined.corrections > 0 {
+                    result = DiarizationChunkResult(chunk: result.chunk, sentences: refined.sentences)
+                    appendEvent("diarization_chunk_refined", fields: [
+                        "chunkIndex": chunk.index,
+                        "corrections": refined.corrections
+                    ])
+                }
+            }
             completedResults[chunk.index] = result
             appendEvent("diarization_task_completed", fields: [
                 "chunkIndex": chunk.index,
