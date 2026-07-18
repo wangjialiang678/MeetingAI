@@ -1,5 +1,21 @@
 # 开发过程日志
 
+## 2026-07-18 - 晚间收尾：静音超时、模式可观测、E2E 断言、首推 GitHub
+
+### 变更
+- `asr-bridge` DashScope 读超时 2min→10min（`dashscopeIdleTimeout`）：17:47 场观测到连续静音期每 2 分钟一轮断连刷屏（bridge 读超时所致，非网络/代理）；客户端环路维持 120s
+- 会议事件记录 `aiMode`，模式切换写 `ai_mode_changed`（17:29 场整场 0 分析无法归因的可观测性缺口）
+- fixture E2E 转写就绪断言兼容新计数文案"N 段"（TranscriptView 改版后"3 条"断言过时导致 P2 误报）
+- 项目首次推送 GitHub（私有仓库）
+
+### 观察记录
+- 17:47 场（约 40 分钟）：说话人分离全程自动回填 232 句（含静音分片 0 句正常完成——静音修复首次真实生效）；按需发言生效（内容单薄时 2 次沉默，实质内容才发声）；NO_PROXY 直连后断连均为单发、2 秒内恢复
+- 该场用户未点"结束会议"直接关窗：`.transcript.md`/`.diarized.jsonl`/`.events.log` 完整，`.txt` 完整重写与录音收尾缺失。后续待办：窗口关闭/应用退出时自动触发 stopMeeting 收尾
+- 18:00 观测到一次 DashScope 服务端错误 `1011 model repeat output happened`（上游模型问题，重连自愈，备案）
+
+### 验证
+- `bash tests/run-p0-p1.sh` + `bash tests/run-p2-ui.sh` → 全 PASS（断言修复后重跑）
+
 ## 2026-07-18 - 会议中滚动替代 + 逐分片 LLM 纠错（用户需求）
 
 ### 需求
