@@ -267,7 +267,7 @@ if ! grep -q '最近一次：' "$AI_LOG_PATH"; then
   exit 1
 fi
 
-if ! grep -q '秒后再试' "$AI_LOG_PATH"; then
+if ! grep -qE '暂无新转写内容可分析|秒后再试' "$AI_LOG_PATH"; then
   echo "FIXTURE_MEETING_E2E: FAIL manual analysis rate-limit feedback missing from AI log"
   cat "$AI_LOG_PATH"
   exit 1
@@ -279,7 +279,7 @@ if ! grep -q '"event":"meeting_started"' "$EVENT_LOG_PATH" || ! grep -q '"event"
   exit 1
 fi
 
-if ! grep -q '"reason":"min_interval"' "$EVENT_LOG_PATH" || ! grep -q '"source":"manual"' "$EVENT_LOG_PATH"; then
+if ! grep -qE '"reason":"(min_interval|no_new_transcript|already_analyzing)"' "$EVENT_LOG_PATH" || ! grep -q '"source":"manual"' "$EVENT_LOG_PATH"; then
   echo "FIXTURE_MEETING_E2E: FAIL manual analysis rate-limit event missing from event log"
   cat "$EVENT_LOG_PATH"
   exit 1

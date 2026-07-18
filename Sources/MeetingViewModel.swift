@@ -316,7 +316,8 @@ class MeetingViewModel: ObservableObject {
         case .researcher: minInterval = 45
         }
         let elapsedSinceLastAnalysis = Date().timeIntervalSince(lastAnalysisTime)
-        if elapsedSinceLastAnalysis < minInterval {
+        // 手动点击是明确的用户意图，不受最小间隔限制（2026-07-18 用户决策）；自动触发仍受限
+        if source != "manual", elapsedSinceLastAnalysis < minInterval {
             let minIntervalText = minInterval.isFinite ? "\(Int(minInterval))" : "infinity"
             let remainingSeconds = minInterval.isFinite ? max(1, Int(ceil(minInterval - elapsedSinceLastAnalysis))) : 0
             logger.debug("Analysis skipped: min interval not met (mode=\(self.aiMode.rawValue), interval=\(Int(elapsedSinceLastAnalysis))s/\(minIntervalText)s)")
