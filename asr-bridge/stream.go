@@ -17,8 +17,11 @@ import (
 )
 
 const (
-	streamTimeout      = 120 * time.Second
-	streamStartTimeout = 10 * time.Second
+	streamTimeout = 120 * time.Second
+	// 会议静音期 DashScope 长时间无事件属正常，2 分钟读超时会造成周期性断连刷屏
+	// （2026-07-18 真实会议观测：静音 4 分钟触发 2 分钟节律断连风暴）
+	dashscopeIdleTimeout = 600 * time.Second
+	streamStartTimeout   = 10 * time.Second
 	dashscopeWSBaseURL = "wss://dashscope.aliyuncs.com/api-ws/v1/realtime"
 )
 
@@ -316,7 +319,7 @@ func isFillerOnly(s string) bool {
 func relayDashscopeEvents(clientConn *websocket.Conn, clientWriteMu *sync.Mutex, dashConn *websocket.Conn) error {
 	hasRealSpeech := false
 	for {
-		dashConn.SetReadDeadline(time.Now().Add(streamTimeout))
+		dashConn.SetReadDeadline(time.Now().Add(dashscopeIdleTimeout))
 		_, raw, err := dashConn.ReadMessage()
 		if err != nil {
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
