@@ -46,6 +46,10 @@ class ASRServerManager: ObservableObject {
         var env = ProcessInfo.processInfo.environment
         env["DASHSCOPE_API_KEY"] = apiKey
         env["ASR_BRIDGE_PORT"] = String(port)
+        // DashScope 直连，绕开本机代理的长连接闲置超时（Go 的 dialer 读取 NO_PROXY/no_proxy）
+        let noProxy = ASRBridgePortGuard.noProxyValue(merging: env["NO_PROXY"] ?? env["no_proxy"])
+        env["NO_PROXY"] = noProxy
+        env["no_proxy"] = noProxy
         proc.environment = env
 
         // 将 Go 子进程的 stderr 转发到 os.log

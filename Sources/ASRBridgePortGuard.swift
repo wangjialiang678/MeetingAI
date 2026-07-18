@@ -34,4 +34,18 @@ enum ASRBridgePortGuard {
         guard !home.isEmpty, path.hasPrefix(home) else { return path }
         return "~" + path.dropFirst(home.count)
     }
+
+    /// bridge 子进程的 NO_PROXY 值：本机 Clash 类代理会闲置超时/重置 bridge→DashScope 长连接
+    /// （2026-07-18 真实会议每 30-90 秒一次 reset），DashScope 必须直连。保留调用方已有的 NO_PROXY 条目。
+    static func noProxyValue(merging existing: String?) -> String {
+        let dashscopeHost = "dashscope.aliyuncs.com"
+        let entries = (existing ?? "")
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        guard !entries.contains(dashscopeHost) else {
+            return entries.joined(separator: ",")
+        }
+        return (entries + [dashscopeHost]).joined(separator: ",")
+    }
 }

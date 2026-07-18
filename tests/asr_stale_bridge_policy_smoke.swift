@@ -22,6 +22,7 @@ struct ASRStaleBridgePolicySmoke {
             try testForeignProcessAborts()
             try testMixedListenersAbortWithoutKilling()
             try testAbortMessageSanitizesHomePath()
+            try testNoProxyValueMerging()
             print("ASR stale bridge policy smoke tests PASS")
         } catch {
             fputs("ASR stale bridge policy smoke tests FAIL: \(error)\n", stderr)
@@ -89,5 +90,24 @@ struct ASRStaleBridgePolicySmoke {
         }
         try expect(!reason.contains(NSHomeDirectory()), "abort reason must not leak absolute home path, got: \(reason)")
         try expect(reason.contains("~/some-tool/bin/asr-bridge"), "abort reason should keep a readable sanitized path, got: \(reason)")
+    }
+
+    private static func testNoProxyValueMerging() throws {
+        try expect(
+            ASRBridgePortGuard.noProxyValue(merging: nil) == "dashscope.aliyuncs.com",
+            "nil existing NO_PROXY should become dashscope entry"
+        )
+        try expect(
+            ASRBridgePortGuard.noProxyValue(merging: "localhost,127.0.0.1") == "localhost,127.0.0.1,dashscope.aliyuncs.com",
+            "existing NO_PROXY entries must be preserved"
+        )
+        try expect(
+            ASRBridgePortGuard.noProxyValue(merging: "dashscope.aliyuncs.com,localhost") == "dashscope.aliyuncs.com,localhost",
+            "already-present dashscope entry must not be duplicated"
+        )
+        try expect(
+            ASRBridgePortGuard.noProxyValue(merging: "  ") == "dashscope.aliyuncs.com",
+            "blank existing NO_PROXY should be treated as empty"
+        )
     }
 }

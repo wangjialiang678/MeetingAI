@@ -1,5 +1,22 @@
 # 开发过程日志
 
+## 2026-07-18 - DashScope NO_PROXY 直连（代理断连风暴处置）
+
+### 背景
+- 17:29 场真实会议出现持续断连风暴：每 30-90 秒一次 `Connection reset by peer` / `connect dashscope: EOF`，重连状态机全部接住（attempt 1-3 内恢复），会议未中断但转写有小缺口
+- 特征与事故文档备案的本机 Clash 代理长连接闲置超时/重置一致，达到其"频繁复发再处理"的阈值；按其候选方案实施
+- 同场好消息：说话人分离自动链路首次在真实会议中全自动生效（chunk 2+ 实时上传→Fun-ASR→回填，会议中 .diarized.jsonl 持续增长）；chunk 0/1 因同期代理抖动 OSS 上传失败（AlibabaCloudOSS.ClientError），本地 WAV 保留待离线补跑
+
+### 变更
+- `ASRBridgePortGuard.noProxyValue(merging:)`：合并已有 NO_PROXY 条目并追加 `dashscope.aliyuncs.com`，不重复
+- `ASRServerManager` 启动 bridge 时注入 `NO_PROXY`/`no_proxy`（Go dialer 读取 env），DashScope 直连绕开本机代理
+
+### 验证
+- RED→GREEN：`asr_stale_bridge_policy_smoke` 新增 4 个合并用例
+- `swift build` + `bash tests/run-p0-p1.sh` → PASS
+- P2 GUI 回归推迟：执行时用户正在开会（P2 会 pkill App）；会议结束后补跑
+- 真实效果验证：下次 App 重启后的会议观察 asr_error 频率是否归零
+
 ## 2026-07-18 - 按需发言 + TranscriptStore + 事件日志降噪（彩排复盘三项落地）
 
 ### 变更（对应彩排复盘三决策：发言按需、2/3 直接改）
