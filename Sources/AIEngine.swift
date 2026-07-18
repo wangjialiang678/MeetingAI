@@ -145,6 +145,40 @@ class AIEngine {
         }
     }
 
+    /// 从模型输出中提取结构化 JSON 文本。
+    /// GLM 等模型习惯把 JSON 包在 ```json 代码围栏里，或在 JSON 前后加说明文字。
+    static func extractStructuredJSONText(_ raw: String) -> String {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // 优先提取 markdown 代码围栏内的内容
+        if let fenceStart = trimmed.range(of: "```") {
+            let afterFence = trimmed[fenceStart.upperBound...]
+            // 跳过围栏语言标记行（如 "json"）
+            let contentStart: Substring
+            if let newline = afterFence.firstIndex(of: "\n") {
+                contentStart = afterFence[afterFence.index(after: newline)...]
+            } else {
+                contentStart = afterFence
+            }
+            if let fenceEnd = contentStart.range(of: "```") {
+                let inner = contentStart[..<fenceEnd.lowerBound].trimmingCharacters(in: .whitespacesAndNewlines)
+                if !inner.isEmpty {
+                    return inner
+                }
+            }
+        }
+
+        // 无围栏：截取首个 { 到末个 } 的子串（容忍 JSON 前后夹带说明文字）
+        if !trimmed.hasPrefix("{"),
+           let firstBrace = trimmed.firstIndex(of: "{"),
+           let lastBrace = trimmed.lastIndex(of: "}"),
+           firstBrace < lastBrace {
+            return String(trimmed[firstBrace...lastBrace])
+        }
+
+        return trimmed
+    }
+
     static func extractChatMessageText(from data: Data) throws -> String {
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let choices = json["choices"] as? [[String: Any]],
@@ -246,7 +280,8 @@ class AIEngine {
             )
         }
 
-        guard let data = rawText.data(using: .utf8),
+        let jsonText = Self.extractStructuredJSONText(rawText)
+        guard let data = jsonText.data(using: .utf8),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let shouldSpeak = json["should_speak"] as? Bool,
               let content = json["content"] as? String else {
@@ -261,7 +296,11 @@ class AIEngine {
         }
 
         let rawKind = (json["kind"] as? String) ?? "insight"
-        let kind = InsightCard.Kind(rawValue: rawKind) ?? .insight
+        var kind = InsightCard.Kind(rawValue: rawKind) ?? .insight
+        if kind == .system {
+            // .system 保留给 App 自身的状态消息，模型不允许自称系统
+            kind = .insight
+        }
         let topicKeywords = (json["topic_keywords"] as? [String]) ?? []
 
         return StructuredAnalysis(

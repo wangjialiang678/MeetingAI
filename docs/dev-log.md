@@ -1,5 +1,23 @@
 # 开发过程日志
 
+## 2026-07-18 - GLM JSON 围栏解析修复 + OSS 说话人分离链路配置
+
+### 变更
+- 修复真实会议暴露的 bug：GLM 5.2 把结构化 JSON 包在 ```` ```json ```` 代码围栏里，解析失败后原始 JSON 被当作洞察全文显示在卡片上。`AIEngine` 新增 `extractStructuredJSONText`：剥代码围栏、容忍 JSON 前后夹带说明文字、纯文本原样返回
+- 结构化输出的 `kind` 若为 `system` 强制降为 `insight`（`.system` 保留给 App 自身状态消息，模型不允许自称系统）
+- OSS 说话人分离链路配置落地（用户确认 bucket 已存在）：server-vault 中的 `OSS_ACCESS_KEY_ID/SECRET` 复制到 api-vault.env（App 只读后者）；config.json 增加 `diarization.uploadBucket = audio-asr-temp`（endpoint 用默认北京）；凭证已用 aliyun CLI 实测可列出 bucket
+- 说明：audio-asr-temp 是共享临时音频桶，MeetingAI 用 `meetingai/chunks` 前缀隔离；本地 chunk 仍是主副本，云端副本仅供 Fun-ASR 处理
+
+### 验证
+- RED：`ai_response_parsing_smoke` 新增 6 个围栏/夹带文本用例 → FAIL（函数不存在）
+- GREEN：`swiftc ... ai_response_parsing_smoke` → PASS；`swift build` → PASS
+- `bash tests/run-p0-p1.sh` → PASS
+- `MEETINGAI_REQUIRE_FUNASR_DIARIZATION=1` 真实 smoke：待用户当前会议（16:08 场）结束后执行（脚本会 pkill App 并播放测试音频）
+
+### 备注
+- 用户实测 GLM 5.2 HTTP 洞察耗时 9.4s（对比 Codex CLI 54.8s），后端切换收益明确
+- 当前运行中的 App 实例仍是围栏修复前的二进制，会议结束重启后生效
+
 ## 2026-07-18 - 设计优化轮：系统消息拆类型、洞察去重、端口冲突加固
 
 ### 背景

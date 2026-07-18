@@ -49,6 +49,38 @@ struct AIResponseParsingSmoke {
                 // Expected.
             }
 
+            // 结构化 JSON 提取：GLM 等模型会把 JSON 包在 markdown 代码围栏里
+            requireEqual(
+                AIEngine.extractStructuredJSONText("{\"should_speak\": true}"),
+                "{\"should_speak\": true}",
+                "bare JSON passes through"
+            )
+            requireEqual(
+                AIEngine.extractStructuredJSONText("```json\n{\"should_speak\": true}\n```"),
+                "{\"should_speak\": true}",
+                "json fence stripped"
+            )
+            requireEqual(
+                AIEngine.extractStructuredJSONText("```\n{\"a\": 1}\n```"),
+                "{\"a\": 1}",
+                "anonymous fence stripped"
+            )
+            requireEqual(
+                AIEngine.extractStructuredJSONText("好的，以下是结果：\n```json\n{\"a\": 1}\n```\n希望有帮助"),
+                "{\"a\": 1}",
+                "fence with surrounding prose stripped"
+            )
+            requireEqual(
+                AIEngine.extractStructuredJSONText("前置说明 {\"a\": 1} 后置说明"),
+                "{\"a\": 1}",
+                "brace substring extracted from prose"
+            )
+            requireEqual(
+                AIEngine.extractStructuredJSONText("纯文本，没有任何 JSON"),
+                "纯文本，没有任何 JSON",
+                "plain text unchanged"
+            )
+
             print("AI response parsing smoke tests PASS")
         } catch {
             fputs("FAIL: unexpected error \(error)\n", stderr)
