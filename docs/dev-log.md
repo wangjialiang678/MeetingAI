@@ -1,5 +1,22 @@
 # 开发过程日志
 
+## 2026-07-18 - 转写结果看门狗（19:41 场"有心跳没结果"停摆处置）
+
+### 故障
+- 19:41 场 19:51 起转写流静默停摆 19 分钟：音频正常发送、DashScope 持续回执 `input_audio_buffer.committed`，但零识别结果、无错误帧——读超时（读在发生）与错误重连（无错误）均不触发。用户感知为"实时分析卡住"（实际是无新文本可分析）
+- 现场恢复：AX 自动化点击 `meeting-toggle-button` 结束再开始（期间误点过无名称按钮弹出文件框，教训：**按 AXIdentifier 定位，不要按索引**）；新会话转写立即恢复
+- 属备案过的 DashScope 服务端降级类故障（同日 18:00 曾出现 `1011 model repeat output happened`）
+
+### 变更
+- 新增 `Sources/ASRResultsWatchdog.swift`：纯决策函数——录音中、以 max(最近转写, 会议开始) 为基线停摆 ≥180s、冷却 180s 内不重复 → 轮换 ASR 流（bridge 存活，重连即新上游会话）
+- `MeetingViewModel.checkASRResultsWatchdog` 挂到 10s 周期检查；轮换写 `asr_results_watchdog_rotated` 事件 + 系统卡片提示
+- 真实静音期的代价：最多每 3 分钟一次无感重连（新上游会话，无数据丢失）
+
+### 验证
+- RED→GREEN：`asr_results_watchdog_smoke` 9 用例（含开场即停摆、冷却、恢复后基线重置）→ PASS
+- `swift build` + `bash tests/run-p0-p1.sh`（新增 P0-20、P1-37）→ PASS；P2 待会议结束后补跑
+- 真实验证：下次重启 App 后遇同类停摆应在 ≤190s 内自动恢复并留事件
+
 ## 2026-07-18 - v2 设计复盘：核心问题重定义 + 下一版架构设计文档（纯文档，无代码变更）
 
 ### 背景
@@ -9,6 +26,8 @@
 - `docs/design/2026-07-18-realtime-copilot-v2-rethink.md`：核心问题重定义（实时性/零搬运/低打扰）、"价值半衰期决定延迟预算"模型、现有架构盘点（G1-G7 缺口）、四方案对比、推荐"事件驱动双车道"架构 + M0-M4 迁移路径。**状态 draft，待用户评审后转 openspec change**
 - `docs/research/2026-07-18-realtime-sales-coach-copilot-refresh.md`：竞品刷新（Cresta/Balto/教练细分空白/Cluely 反例/TalkPilot 直接对标）+ 5 信源反方证据（Balto"延迟 3 秒即侵蚀信任"等）
 - `docs/research/2026-07-18-realtime-conversation-ai-architecture.md`：级联 vs 音频原生 S2S（结论：级联仍是 2026 生产共识，S2S 结构性错配且贵 1-2 个数量级）、FluidAudio 本地流式说话人分离新发现、AIEngine 流式渲染 + prompt 缓存为最可落地优化
+- 竞品代码拆解回灌（`docs/research/2026-07-18-competitor-code-interaction-teardown.md`，对标仓库 clone 在 `repos/` 已 gitignore）：反向验证按需发言三件套护城河（新增 2.2 资产第 7 条 + 5.3 节）；M0 增补 prompt 四改进/解析兜底，M1 增补一键 chip/"AI 卡住"可见反馈，D6 升级为三级渐进呈现
+- 设计评审走 Vibe Workbench（session `meetingai-v2-review` round 2，可视化版：延迟对照表/现状瓶颈图/v2 架构图/路线图/主界面线框图 + 5 个开放问题 + 9 决策清单），待用户提交反馈
 
 ### 关键结论
 - 最大结构性缺口：全部 AI 介入共用"字数阈值触发 + 非流式 LLM"单管线（端到端 1-3min），覆盖不了销售异议/教练信号这类 10-30s 价值窗口；瓶颈在触发机制与非流式生成，不在 ASR

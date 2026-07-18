@@ -90,6 +90,11 @@ swiftc Sources/Models.swift Sources/TranscriptStore.swift tests/transcript_store
   && ./.build/transcript_store_smoke \
   && echo "PASS" || { echo "FAIL"; exit 1; }
 
+echo "[P0-20] ASR results watchdog smoke tests..."
+swiftc Sources/ASRResultsWatchdog.swift tests/asr_results_watchdog_smoke.swift -o .build/asr_results_watchdog_smoke \
+  && ./.build/asr_results_watchdog_smoke \
+  && echo "PASS" || { echo "FAIL"; exit 1; }
+
 echo "[P0-19] Transcript refiner smoke tests..."
 swiftc Sources/Models.swift Sources/AIEngine.swift Sources/DiarizationModels.swift Sources/TranscriptRefiner.swift tests/transcript_refiner_smoke.swift -o .build/transcript_refiner_smoke \
   && ./.build/transcript_refiner_smoke \
@@ -146,6 +151,7 @@ check "P1-33 complete txt finalize wired" "grep -q 'TranscriptStore.completeTran
 check "P1-34 auto skip event denoised" "grep -q 'logSkipEventIfNeeded' Sources/MeetingViewModel.swift"
 check "P1-35 chunk refiner wired" "grep -q 'sentenceRefiner' Sources/DiarizationPipeline.swift && grep -q 'refineDiarizedSentences' Sources/MeetingViewModel.swift"
 check "P1-36 rolling transcript view" "grep -q 'realtimeTailEntries' Sources/TranscriptView.swift && grep -q 'speakerCoverageCutoffDate' Sources/MeetingViewModel.swift"
+check "P1-37 asr results watchdog wired" "grep -q 'checkASRResultsWatchdog' Sources/MeetingViewModel.swift && grep -q 'asr_results_watchdog_rotated' Sources/MeetingViewModel.swift"
 
 echo ""
 if [ $FAIL -eq 0 ]; then

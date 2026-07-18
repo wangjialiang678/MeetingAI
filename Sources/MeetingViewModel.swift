@@ -67,6 +67,7 @@ class MeetingViewModel: ObservableObject {
     private var lastTopicKeywords: [String] = []
     private var consecutiveSilentCount = 0
     private var didLogAutoSkipSinceLastAnalysis = false
+    private var lastWatchdogRotateAt: Date?
     private(set) var meetingStartDate: Date?
 
     /// 说话人分离已覆盖到的绝对时间；早于它的实时 final 条目在 UI 中被说话人段落替代
@@ -98,6 +99,7 @@ class MeetingViewModel: ObservableObject {
         consecutiveSilentCount = 0
         didLogAutoSkipSinceLastAnalysis = false
         meetingStartDate = Date()
+        lastWatchdogRotateAt = nil
         speakerBackfillSegments = []
         diarizationLoggedChunkIndices.removeAll()
         diarizationProcessingChunkIndices.removeAll()
@@ -1329,7 +1331,30 @@ class MeetingViewModel: ObservableObject {
             }
         }
         silenceCheckTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in self?.checkSilenceTrigger() }
+            Task { @MainActor [weak self] in
+                self?.checkASRResultsWatchdog()
+                self?.checkSilenceTrigger()
+            }
+        }
+    }
+
+    /// 转写结果停摆检测：音频在流动但识别结果长时间为零（服务端静默降级）时轮换 ASR 会话
+    private func checkASRResultsWatchdog() {
+        guard ASRResultsWatchdog.standard.shouldRotate(
+            now: Date(),
+            isRecording: isRecording,
+            lastTranscriptAt: lastTranscriptTime,
+            meetingStartAt: meetingStartDate,
+            lastRotateAt: lastWatchdogRotateAt
+        ) else { return }
+        lastWatchdogRotateAt = Date()
+        let baseline = max(lastTranscriptTime, meetingStartDate ?? .distantPast)
+        let stallSeconds = Int(Date().timeIntervalSince(baseline))
+        logger.warning("ASR results watchdog: no transcript for \(stallSeconds)s while recording, rotating stream")
+        appendEvent("asr_results_watchdog_rotated", fields: ["stallSeconds": stallSeconds])
+        appendSystemMessage("转写结果停滞 \(stallSeconds) 秒，已自动重连语音识别")
+        Task { @MainActor [weak self] in
+            await self?.reconnectASR()
         }
     }
 
