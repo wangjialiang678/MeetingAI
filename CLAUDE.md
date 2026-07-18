@@ -77,9 +77,11 @@ OSS_ACCESS_KEY_SECRET=...
     "model": "z-ai/glm-5.2",
     "baseURL": "https://openrouter.ai/api/v1/chat/completions",
     "apiKeyEnv": "OPENROUTER_API_KEY"
-  }
+  },
+  "diarization": { "uploadBucket": "audio-asr-temp", "uploadStorage": "oss" }
 }
 ```
+注意：说话人分离上传**必须同时配** `uploadBucket` 和 `uploadStorage: "oss"`——只配 bucket 时管线会静默禁用（events.log 里 `diarization_pipeline_disabled` / `upload_storage_not_oss`，2026-07-18 真实彩排踩过）。
 其他可用字段：`asr.language`（默认 zh）、`ai.autoAnalysisIntervalSeconds`（默认 300）、`ai.maxContextTokens`（默认 100000）。`ai.apiKeyEnv` 指定 HTTP 后端从哪个环境变量取 key（默认 `QWEN_API_KEY`），换模型供应商只需改 config，不用改代码。
 
 常用环境覆盖：`MEETINGAI_ANALYSIS_BACKEND=http|codex_cli|hybrid`、`MEETINGAI_SESSIONS_DIR`、`MEETINGAI_UI_FIXTURE=1`、`MEETINGAI_SEGMENTED_DIARIZATION`、`MEETINGAI_DIARIZATION_CHUNK_SECONDS`、`MEETINGAI_DIARIZATION_UPLOAD_BUCKET`。

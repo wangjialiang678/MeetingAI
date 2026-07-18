@@ -1,5 +1,24 @@
 # 开发过程日志
 
+## 2026-07-18 - 31 分钟真实彩排复盘 + 说话人分离离线补跑
+
+### 观察（session 2026-07-18-16-30-12，31 分钟真实多人会议）
+- ASR 全程 0 错误 0 重连（对照 2026-04-02 的 264 错误/235 重连），一次连接撑满全场
+- AI 分析 15 次全部完成、0 失败 0 回退；GLM 5.2 多数 10-24s、一次 74s 尖刺（OpenRouter 波动）；2 张小结卡证明话题切换检测生效；洞察去重 0 触发
+- **partial-only 极端化：6917 partial vs 2 final**，`.txt` 基本为空；TranscriptStore 优先级应提升
+- 事件日志噪声：4623 条 `min_interval` skip 事件（每条 partial 都写）占 events.log 大半，待降噪
+- **说话人分离管线未启动**：config.json 只配了 `uploadBucket` 漏了 `uploadStorage: "oss"`，管线静默禁用（smoke 走env覆盖所以没暴露）。已修 config 并在 CLAUDE.md 记录此坑
+
+### 补救
+- 31 个本地分片离线补跑：aliyun CLI 上传 OSS → Fun-ASR 单任务批量提交（31 file_urls）→ 回填 `.diarized.jsonl`（327 句）与 `.transcript.md`
+- 识别出 4 个说话人（speaker-0: 246 句 / speaker-1: 63 / speaker-2: 15 / speaker-3: 3），15/31 分片内含多说话人；跨 chunk speaker 编号稳定性仍属已知限制，未验证同名即同人
+
+### 待办（复盘产生，未动手）
+- min_interval skip 事件降噪（只在状态变化或 manual 时写）
+- TranscriptStore：partial-only 场景 `.txt` 完整性
+- AI 发言预算：顾问模式贴 120s 下限每 2 分钟一卡，密度待用户评价
+- App 内增加"旧会话补跑说话人分离"入口（本次为脚本手工补跑）
+
 ## 2026-07-18 - Fun-ASR 真实链路首次 PASS：静音分片修复
 
 ### 变更
