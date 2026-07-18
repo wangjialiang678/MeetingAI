@@ -1,0 +1,22 @@
+schema: spec-driven
+
+context: |
+  Product: MeetingAI, a macOS desktop app for live meeting transcription and AI assistance.
+  Stack: Swift 5.9 + SwiftUI, SPM executable target, Go asr-bridge subprocess.
+  Runtime: macOS 14+, microphone input, local Application Support storage.
+  Architecture: MeetingViewModel is the state center; ASRServerManager manages the local bridge; AIEngine calls an OpenAI-compatible chat completion API.
+  UX constraint: users are in a live meeting, so AI output must be low-noise, glanceable, and easy to ignore.
+  Documentation note: old docs under docs/ may drift; OpenSpec is the new source of truth for agreed behavior.
+
+rules:
+  proposal:
+    - Keep product proposals concrete and behavior-focused.
+    - Call out user attention cost and trust implications for every AI-facing change.
+  specs:
+    - Prefer user-visible behavior and state transitions over vendor-specific implementation details.
+    - Scenarios should be testable from UI, view model, or integration boundaries.
+  design:
+    - Explicitly separate immediate MVP behavior from future aspirations.
+    - Include latency, interruption policy, and failure-mode handling when AI behavior changes.
+  tasks:
+    - Break work into implementable chunks tied to SwiftUI, ViewModel, ASR, or AI integration responsibilities.

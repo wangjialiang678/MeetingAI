@@ -1,0 +1,31 @@
+run_id=real-smoke-2026-05-23-17-53-36
+started_at=Sat May 23 17:53:36 CST 2026
+duration_seconds=90
+analysis_wait_seconds=75
+analysis_backend=http
+diarization_chunk_seconds=2
+log_dir=docs/runtime-logs/real-smoke-2026-05-23-17-53-36
+sessions_dir=/var/folders/sj/3nv6pqh12lj77qm4mzxjpy400000gp/T//meetingai-real-smoke-sessions.03xYdB
+dashscope_key_present=yes
+qwen_key_present=yes
+ended_at=Sat May 23 17:53:55 CST 2026
+txt_count=0
+recording_count=1
+event_count=1
+transcript_md_count=1
+ai_count=1
+chunks_log_count=1
+chunk_wav_count=5
+transcript_ready=1
+analysis_outcome=completed
+session_files:
+/var/folders/sj/3nv6pqh12lj77qm4mzxjpy400000gp/T//meetingai-real-smoke-sessions.03xYdB/2026-05-23-17-53-41-chunks/2026-05-23-17-53-41-chunk-0000.wav
+/var/folders/sj/3nv6pqh12lj77qm4mzxjpy400000gp/T//meetingai-real-smoke-sessions.03xYdB/2026-05-23-17-53-41-chunks/2026-05-23-17-53-41-chunk-0001.wav
+/var/folders/sj/3nv6pqh12lj77qm4mzxjpy400000gp/T//meetingai-real-smoke-sessions.03xYdB/2026-05-23-17-53-41-chunks/2026-05-23-17-53-41-chunk-0002.wav
+/var/folders/sj/3nv6pqh12lj77qm4mzxjpy400000gp/T//meetingai-real-smoke-sessions.03xYdB/2026-05-23-17-53-41-chunks/2026-05-23-17-53-41-chunk-0003.wav
+/var/folders/sj/3nv6pqh12lj77qm4mzxjpy400000gp/T//meetingai-real-smoke-sessions.03xYdB/2026-05-23-17-53-41-chunks/2026-05-23-17-53-41-chunk-0004.wav
+/var/folders/sj/3nv6pqh12lj77qm4mzxjpy400000gp/T//meetingai-real-smoke-sessions.03xYdB/2026-05-23-17-53-41.ai.md
+/var/folders/sj/3nv6pqh12lj77qm4mzxjpy400000gp/T//meetingai-real-smoke-sessions.03xYdB/2026-05-23-17-53-41.chunks.jsonl
+/var/folders/sj/3nv6pqh12lj77qm4mzxjpy400000gp/T//meetingai-real-smoke-sessions.03xYdB/2026-05-23-17-53-41.events.log
+/var/folders/sj/3nv6pqh12lj77qm4mzxjpy400000gp/T//meetingai-real-smoke-sessions.03xYdB/2026-05-23-17-53-41.transcript.md
+/var/folders/sj/3nv6pqh12lj77qm4mzxjpy400000gp/T//meetingai-real-smoke-sessions.03xYdB/2026-05-23-17-53-41.wav

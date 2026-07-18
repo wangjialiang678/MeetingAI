@@ -1,0 +1,39 @@
+[
+  {
+    "id": "backend-ai-refactor",
+    "description": "后端重构：数据模型(Models.swift)、AI引擎结构化输出(AIEngine.swift)、ViewModel核心逻辑重写(MeetingViewModel.swift) — prompt改造、触发逻辑、AI自判断should_speak、三档模式、话题切换检测、用户提问、会话保存",
+    "files": ["Sources/Models.swift", "Sources/AIEngine.swift", "Sources/MeetingViewModel.swift"],
+    "dependencies": [],
+    "test_criteria": [
+      "Models.swift: InsightCard 结构体包含 id/timestamp/content/kind/isPinned/userQuery 字段，Kind enum 有 insight/reply/summary，AIMode enum 有 observer/advisor/researcher",
+      "AIEngine.swift: 新增 analyzeStructured() 方法返回解析后的 JSON 结构（should_speak/content/kind/topic_keywords），JSON解析失败时fallback为纯文本",
+      "MeetingViewModel.swift: chatMessages 改为 insightCards: [InsightCard]，triggerAnalysis()使用analyzeStructured()并根据should_speak决定是否显示，三档模式控制触发阈值（observer不主动/advisor每5条或60s静默/researcher每3条或30s静默），最小输出间隔（advisor:2min/researcher:45s），节点总结在topic_keywords变化时触发，sendUserMessage()创建.reply类型卡片带userQuery，stopMeeting()时调用saveAILog()保存AI信息流为Markdown",
+      "swift build 编译通过"
+    ],
+    "priority": 1,
+    "status": "done",
+    "coder": "codex",
+    "worktree_branch": "feat/backend-ai-refactor",
+    "retries": 0,
+    "commit": "9f6b208"
+  },
+  {
+    "id": "frontend-card-ui",
+    "description": "前端重构：ChatView改为InsightFeedView（卡片UI+📌标记+旧卡片折叠），ContentView顶栏加三档模式Picker，SettingsView更新默认prompt展示",
+    "files": ["Sources/ChatView.swift", "Sources/ContentView.swift", "Sources/SettingsView.swift"],
+    "dependencies": ["backend-ai-refactor"],
+    "test_criteria": [
+      "ChatView.swift 重命名为 InsightFeedView.swift，使用 InsightCard 模型渲染三种卡片样式：insight(普通)/reply(顶部显示灰色用户提问)/summary(分割线+阶段小结标题)",
+      "每张卡片右下角有📌按钮，点击切换isPinned状态",
+      "超过15分钟且未📌的卡片自动折叠为一行摘要",
+      "ContentView.swift 顶栏新增 Picker 三档切换（观察者/顾问/研究员），绑定 viewModel.aiMode",
+      "SettingsView.swift 的默认prompt预览更新为新版JSON格式prompt",
+      "swift build 编译通过"
+    ],
+    "priority": 2,
+    "status": "done",
+    "coder": "claude-code",
+    "worktree_branch": "feat/frontend-card-ui",
+    "retries": 0
+  }
+]

@@ -2,9 +2,15 @@ import SwiftUI
 
 struct SettingsView: View {
     @AppStorage("customSystemPrompt") private var customPrompt: String = ""
+    @AppStorage("analysisBackend") private var analysisBackendRaw: String = AnalysisBackendMode.hybrid.rawValue
     @Environment(\.dismiss) private var dismiss
 
     private let defaultPromptPreview = MeetingViewModel.buildDefaultSystemPrompt(count: 1, elapsedMin: 5, mode: .advisor)
+
+    private var selectedBackend: AnalysisBackendMode {
+        get { AnalysisBackendMode(rawValue: analysisBackendRaw) ?? .hybrid }
+        nonmutating set { analysisBackendRaw = newValue.rawValue }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -15,6 +21,32 @@ struct SettingsView: View {
                     .fontWeight(.semibold)
                 Spacer()
                 Button("关闭") { dismiss() }
+            }
+            .padding()
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("分析后端")
+                    .font(.headline)
+
+                Picker("分析后端", selection: Binding(
+                    get: { selectedBackend },
+                    set: { selectedBackend = $0 }
+                )) {
+                    ForEach(AnalysisBackendMode.allCases, id: \.self) { backend in
+                        Text(backend.displayName).tag(backend)
+                    }
+                }
+                .pickerStyle(.segmented)
+
+                Text(selectedBackend.description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Text("当前 Hybrid 策略：洞察优先走 Codex CLI，总结与追问回复走 HTTP。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             .padding()
 

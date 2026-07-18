@@ -1,0 +1,17 @@
+run_id=real-smoke-2026-05-23-16-50-33
+started_at=Sat May 23 16:50:33 CST 2026
+duration_seconds=90
+log_dir=docs/runtime-logs/real-smoke-2026-05-23-16-50-33
+sessions_dir=/var/folders/sj/3nv6pqh12lj77qm4mzxjpy400000gp/T//meetingai-real-smoke-sessions.Mpd2pd
+dashscope_key_present=yes
+qwen_key_present=yes
+ended_at=Sat May 23 16:51:32 CST 2026
+txt_count=0
+event_count=1
+transcript_md_count=1
+ai_count=1
+transcript_ready=1
+session_files:
+/var/folders/sj/3nv6pqh12lj77qm4mzxjpy400000gp/T//meetingai-real-smoke-sessions.Mpd2pd/2026-05-23-16-50-39.ai.md
+/var/folders/sj/3nv6pqh12lj77qm4mzxjpy400000gp/T//meetingai-real-smoke-sessions.Mpd2pd/2026-05-23-16-50-39.events.log
+/var/folders/sj/3nv6pqh12lj77qm4mzxjpy400000gp/T//meetingai-real-smoke-sessions.Mpd2pd/2026-05-23-16-50-39.transcript.md

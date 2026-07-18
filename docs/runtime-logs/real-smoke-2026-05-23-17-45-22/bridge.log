@@ -1,0 +1,13 @@
+2026/05/23 16:58:29 server error: listen tcp :18089: bind: address already in use
+2026/05/23 17:00:54 [hotword] hotwords.txt not found, skipping
+2026/05/23 17:00:54 asr-bridge listening on :18089
+2026/05/23 17:00:54 server error: listen tcp :18089: bind: address already in use
+2026/05/23 17:15:26 [hotword] hotwords.txt not found, skipping
+2026/05/23 17:15:26 asr-bridge listening on :18089
+2026/05/23 17:15:26 server error: listen tcp :18089: bind: address already in use
+2026/05/23 17:17:35 [hotword] hotwords.txt not found, skipping
+2026/05/23 17:17:35 asr-bridge listening on :18089
+2026/05/23 17:17:35 server error: listen tcp :18089: bind: address already in use
+2026/05/23 17:45:28 [hotword] hotwords.txt not found, skipping
+2026/05/23 17:45:28 asr-bridge listening on :18089
+2026/05/23 17:45:28 server error: listen tcp :18089: bind: address already in use

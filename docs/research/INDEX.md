@@ -1,0 +1,6 @@
+| Date | Topic | Summary | File |
+|------|-------|---------|------|
+| 2026-03-27 | OpenSpec workflow adoption | Clarified how to initialize OpenSpec for this repo, preserve existing AGENTS rules, and map current docs into baseline specs plus a first change. | [2026-03-27-openspec-workflow-adoption.md](./2026-03-27-openspec-workflow-adoption.md) |
+| 2026-03-27 | Analysis backend benchmark | Compared current HTTP analysis against Codex CLI on summary and insight prompts, then recommended Hybrid as the default split. | [2026-03-27-analysis-backend-benchmark.md](./2026-03-27-analysis-backend-benchmark.md) |
+| 2026-05-23 | Proactive Meeting Agent 与私董会实时 AI 教练 | Broad research on proactive meeting agents, real-time meeting coaches, commercial competitors, open-source projects, papers, and MeetingAI's private-board coach scenario. | [2026-05-23-proactive-meeting-agent-private-board-coach.md](./2026-05-23-proactive-meeting-agent-private-board-coach.md) |
+| 2026-05-23 | 说话人分离与分片录音转写 | Verified DashScope model capabilities and recommended a dual-track design: realtime Qwen-ASR for low-latency UI plus segmented Fun-ASR file transcription with diarization. | [2026-05-23-diarization-segmented-transcription.md](./2026-05-23-diarization-segmented-transcription.md) |

@@ -6,13 +6,36 @@ private let logger = Logger(subsystem: "MeetingAI", category: "InsightFeedView")
 struct InsightFeedView: View {
     @EnvironmentObject var viewModel: MeetingViewModel
     @FocusState private var isInputFocused: Bool
+    @AppStorage("analysisBackend") private var analysisBackendRaw: String = AnalysisBackendMode.hybrid.rawValue
+
+    private var selectedBackend: AnalysisBackendMode {
+        AnalysisBackendMode(rawValue: analysisBackendRaw) ?? .hybrid
+    }
+
+    private var statusColor: Color {
+        if viewModel.analysisActivityText != nil {
+            return .blue
+        }
+        if viewModel.lastAnalysisStatusText.contains("最近失败") {
+            return .red
+        }
+        if viewModel.lastAnalysisStatusText.contains("回退") {
+            return .orange
+        }
+        return .secondary
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
                 Text("AI 洞察")
                     .font(.headline)
+                    .accessibilityIdentifier("insight-feed-title")
                 Spacer()
+                Text("\(viewModel.insightCards.count) 条")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("insight-card-count")
                 if viewModel.isAnalyzing {
                     ProgressView()
                         .controlSize(.small)
@@ -29,8 +52,29 @@ struct InsightFeedView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(.orange)
                 .disabled(!viewModel.isRecording || viewModel.isAnalyzing)
+                .accessibilityIdentifier("analysis-trigger-button")
             }
             .padding()
+
+            HStack(spacing: 8) {
+                Text("后端：\(selectedBackend.displayName)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if let activity = viewModel.analysisActivityText {
+                    Text(activity)
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                        .accessibilityIdentifier("analysis-activity-text")
+                } else {
+                    Text(viewModel.lastAnalysisStatusText)
+                        .font(.caption)
+                        .foregroundStyle(statusColor)
+                        .accessibilityIdentifier("analysis-status-text")
+                }
+                Spacer()
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 8)
 
             Divider()
 
@@ -39,6 +83,7 @@ struct InsightFeedView: View {
                     Spacer()
                     Text("AI 洞察将在此显示")
                         .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("insight-empty-state")
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)
@@ -69,6 +114,7 @@ struct InsightFeedView: View {
                 TextField("向 AI 提问...", text: $viewModel.userInput)
                     .textFieldStyle(.roundedBorder)
                     .focused($isInputFocused)
+                    .accessibilityIdentifier("insight-question-input")
                     .onSubmit {
                         viewModel.sendUserMessage()
                         isInputFocused = true
@@ -80,6 +126,7 @@ struct InsightFeedView: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(viewModel.userInput.trimmingCharacters(in: .whitespaces).isEmpty)
                 .keyboardShortcut(.return, modifiers: .command)
+                .accessibilityIdentifier("insight-send-button")
             }
             .padding()
             .onAppear {
@@ -159,6 +206,15 @@ struct InsightCardView: View {
                         .font(.caption)
                         .fontWeight(.semibold)
                         .foregroundStyle(kindColor)
+                    if let execution = card.execution {
+                        Text(execution.backendBadgeText)
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(execution.usedBackend == .codexCLI ? Color.blue.opacity(0.12) : Color.gray.opacity(0.12))
+                            .clipShape(Capsule())
+                            .accessibilityIdentifier("insight-card-backend-badge")
+                    }
                     Text(formatTime(card.timestamp))
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
@@ -177,11 +233,21 @@ struct InsightCardView: View {
                 Text(card.content)
                     .textSelection(.enabled)
                     .font(.body)
+                    .accessibilityLabel(card.content)
+
+                if let execution = card.execution {
+                    Text(execution.statusText)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("insight-card-status")
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(10)
             .background(kindBackground)
             .clipShape(RoundedRectangle(cornerRadius: 8))
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("insight-card")
         }
     }
 
@@ -190,6 +256,7 @@ struct InsightCardView: View {
         case .insight: return "lightbulb"
         case .reply: return "bubble.left"
         case .summary: return "list.clipboard"
+        case .system: return "gearshape"
         }
     }
 
@@ -198,6 +265,7 @@ struct InsightCardView: View {
         case .insight: return "洞察"
         case .reply: return "回复"
         case .summary: return "小结"
+        case .system: return "系统"
         }
     }
 
@@ -206,6 +274,7 @@ struct InsightCardView: View {
         case .insight: return .green
         case .reply: return .blue
         case .summary: return .orange
+        case .system: return .gray
         }
     }
 
@@ -214,6 +283,7 @@ struct InsightCardView: View {
         case .insight: return .green.opacity(0.08)
         case .reply: return .blue.opacity(0.08)
         case .summary: return .orange.opacity(0.08)
+        case .system: return .gray.opacity(0.06)
         }
     }
 

@@ -1,0 +1,5 @@
+Filtering the log data using "subsystem == "MeetingAI""
+Timestamp               Ty Process[PID:TID]
+2026-05-23 16:54:38.731 E  MeetingAI[81270:97e14a] [MeetingAI:AudioRecorder] Could not create MP3 file at <private>, recording disabled
+2026-05-23 16:55:16.391 E  MeetingAI[81270:97e169] [MeetingAI:AIEngine] Failed to parse AI response: <private>
+2026-05-23 16:55:16.391 E  MeetingAI[81270:97e14a] [MeetingAI:ViewModel] AI analysis failed: 模型响应解析失败。

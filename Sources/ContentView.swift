@@ -35,6 +35,7 @@ struct ContentView: View {
             HStack {
                 Text("会议 AI 助手")
                     .font(.headline)
+                    .accessibilityIdentifier("meeting-title")
 
                 Spacer()
 
@@ -44,8 +45,10 @@ struct ContentView: View {
                             .fill(.red)
                             .frame(width: 8, height: 8)
                         Text("录音中")
+                            .accessibilityIdentifier("recording-status-label")
                         Text(formatDuration(viewModel.recordingDuration))
                             .monospacedDigit()
+                            .accessibilityIdentifier("recording-duration-label")
                     }
                     .foregroundStyle(.secondary)
 
@@ -57,6 +60,8 @@ struct ContentView: View {
                         Text("导入历史")
                     }
                     .help("导入历史转写文件")
+                    .accessibilityLabel("导入历史")
+                    .accessibilityIdentifier("import-transcript-button")
                 }
 
                 // AI Mode picker
@@ -67,6 +72,7 @@ struct ContentView: View {
                 }
                 .pickerStyle(.segmented)
                 .frame(width: 200)
+                .accessibilityIdentifier("ai-mode-picker")
 
                 // Settings button
                 Button {
@@ -75,6 +81,8 @@ struct ContentView: View {
                     Image(systemName: "gearshape")
                 }
                 .help("Prompt 设置")
+                .accessibilityLabel("设置")
+                .accessibilityIdentifier("settings-button")
 
                 Button(viewModel.isRecording ? "结束会议" : "开始会议") {
                     if viewModel.isRecording {
@@ -86,6 +94,7 @@ struct ContentView: View {
                 .controlSize(.large)
                 .buttonStyle(.borderedProminent)
                 .tint(viewModel.isRecording ? .red : .accentColor)
+                .accessibilityIdentifier("meeting-toggle-button")
             }
             .padding()
 

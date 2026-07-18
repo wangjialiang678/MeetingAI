@@ -1,12 +1,22 @@
 ---
 title: 会议 AI 助手 PRD
 date: 2026-02-27
-status: active
+updated: 2026-07-18
+status: historical
 audience: both
 tags: [prd]
 ---
 
 # 会议 AI 助手 — PRD
+
+> **2026-07-18 更新说明**：本文是 2026-02-27 的 MVP 初版 PRD，保留作历史背景。以下内容已与当前实现不一致，现行事实以 `openspec/specs/` 和根目录 `CLAUDE.md` 为准：
+>
+> - ASR 已从 audio-asr-go（:18080）迁移到项目内 asr-bridge（:18089，DashScope qwen3-asr-flash-realtime）
+> - LLM 已从 MiniMax M2.5 迁移到 Hybrid（洞察走 Codex CLI，总结/追问走 Qwen/NVIDIA HTTP）
+> - AI 触发已从"每 5 分钟定时"改为按文本长度/沉默/兜底三层触发（partial 计入），并有三种模式（观察者/顾问/研究员）
+> - 右侧 UI 已从聊天窗改为洞察卡片流（InsightFeedView，支持置顶/折叠/模式切换）
+> - "无持久化"已废弃：每场会议保存 `.txt` / `.transcript.md` / `.ai.md` / `.events.log` / `.chunks.jsonl` / 录音
+> - "不做说话人识别"已废弃：已实现分片录音 + OSS + Fun-ASR 非实时说话人分离归档轨（待 OSS 凭证做真实云端验证）
 
 ## 产品概述
 

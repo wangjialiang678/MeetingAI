@@ -1,0 +1,9 @@
+run_id=real-smoke-2026-05-23-17-10-09
+started_at=Sat May 23 17:10:09 CST 2026
+duration_seconds=90
+analysis_wait_seconds=75
+analysis_backend=http
+log_dir=docs/runtime-logs/real-smoke-2026-05-23-17-10-09
+sessions_dir=/var/folders/sj/3nv6pqh12lj77qm4mzxjpy400000gp/T//meetingai-real-smoke-sessions.y5BEVU
+dashscope_key_present=yes
+qwen_key_present=yes

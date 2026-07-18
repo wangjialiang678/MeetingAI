@@ -1,0 +1,2 @@
+2026-05-23 17:45:25.405 MeetingAI[4233:10066640] TSM AdjustCapsLockLEDForKeyTransitionHandling - _ISSetPhysicalKeyboardCapsLockLED Inhibit
+2026-05-23 17:45:25.421 MeetingAI[4233:10066640] error messaging the mach port for IMKCFRunLoopWakeUpReliable

@@ -1,136 +1,122 @@
 # 会议 AI 助手 (MeetingAI)
 
-Mac 原生桌面应用，会议期间实时录音转写，AI 自动分析并给出建议，支持对话式交互。
+Mac 原生桌面应用，会议期间实时录音转写，AI 自动分析并产出洞察卡片，支持对话式交互；录音分片走后台说话人分离归档轨。
+
+需求与行为的 source of truth 在 `openspec/`；现状综述见 `docs/stage-review-2026-05-23.md`，工程守则见 `docs/engineering-lessons-2026-05-23.md`，交接速览见 `docs/handoff-2026-07-18.md`。
 
 ## 技术栈
 
 | 组件 | 技术 |
 |------|------|
 | 语言/框架 | Swift 5.9 + SwiftUI，macOS 14+ |
-| 构建工具 | Swift Package Manager (SPM)，executableTarget，无外部依赖 |
-| 录音采集 | AVAudioEngine，16kHz PCM16 单声道 + MP3 文件录制 |
-| ASR 后端 | asr-bridge（Go 子进程，:18089），JSON WebSocket，DashScope qwen3-asr-flash-realtime |
-| LLM | MiniMax M2.5，HTTP API（OpenAI-compatible chat completions 格式） |
-| 日志 | os.log（subsystem: "MeetingAI"，按模块分 category） |
+| 构建工具 | Swift Package Manager (SPM)，executableTarget，依赖 alibabacloud-oss-swift-sdk-v2 |
+| 录音采集 | AVAudioEngine，16kHz PCM16 单声道；录音文件 MP3（编码器不可用时自动 fallback 单声道 WAV） |
+| 实时 ASR | asr-bridge（Go 子进程，端口默认 18089，**本机实际用 18090**，由 config.json 指定以避开 SpeakLow 的 18089，见 `docs/incident-asr-port-conflict-2026-07-18.md`），JSON WebSocket `ws://127.0.0.1:{port}/v1/stream`，DashScope qwen3-asr-flash-realtime |
+| AI 分析 | 默认 **HTTP**（2026-07-18 起，Codex CLI 洞察实测 50s+ 延迟，降级为可选项）。本机走 `z-ai/glm-5.2` @ OpenRouter（config.json 指定，key 用 `OPENROUTER_API_KEY`）；代码默认 `qwen/qwen3.5-122b-a10b` @ NVIDIA。Codex CLI / Hybrid 仍可在设置里切换，Codex 失败自动回退 HTTP |
+| 说话人分离 | 归档轨：会议中按 chunk 封存单声道 WAV → OSS 上传（官方 Swift SDK）→ Fun-ASR 非实时 HTTP → merge → 回填（需 OSS 凭证，缺失时静默等待不伪造） |
+| 日志 | os.log（subsystem: "MeetingAI"）+ 每场会议 `.events.log` JSON Lines（复盘首选判据） |
 
 ## 目录结构
 
 ```
 MeetingAI/
-├── Package.swift               # SPM 配置，executableTarget，平台 macOS 14
-├── PRD.md                      # 产品需求文档（含架构图、UI 设计、API 说明）
-├── asr-bridge/                 # Go ASR 代理（从 speaklow 适配）
-│   ├── main.go                 # HTTP 服务入口，/health + /v1/stream
-│   ├── stream.go               # 核心流式 WebSocket ASR 代理（DashScope qwen3-asr）
-│   ├── hotword.go              # 热词加载
-│   ├── env.go                  # 环境变量加载（~/.claude/api-vault.env）
-│   ├── go.mod                  # 模块 meetingai/asr-bridge
-│   └── go.sum
+├── Package.swift               # SPM 配置，macOS 14，OSS SDK 依赖
+├── asr-bridge/                 # Go ASR 代理（/health + /v1/stream，端口由 config.json 指定，本机 18090）
+├── openspec/                   # 需求规格 source of truth（specs/ + changes/）
 ├── Sources/
-│   ├── ContentView.swift       # @main 入口，顶部栏 + HSplitView 双面板布局
-│   ├── MeetingViewModel.swift  # 核心状态机，@MainActor ObservableObject
-│   ├── Models.swift            # TranscriptEntry / ChatMessage 数据模型
-│   ├── Config.swift            # AppConfig，从 api-vault.env 和 config.json 加载
-│   ├── ASRServerManager.swift  # Go 子进程管理（自动编译/启动/健康检查/终止）
-│   ├── ASRClient.swift         # JSON WebSocket 客户端，连接 asr-bridge
-│   ├── AudioRecorder.swift     # AVAudioEngine 录音，双路输出 PCM16 + MP3
-│   ├── AIEngine.swift          # MiniMax HTTP API 调用封装
-│   ├── TranscriptView.swift    # 左侧实时转写面板（带时间戳，自动滚动）
-│   ├── ChatView.swift          # 右侧 AI 对话面板
-│   └── SettingsView.swift      # 设置界面（自定义 System Prompt 等）
-└── .claude/
-    └── memory-bank/            # 调研记录、会话日志
+│   ├── ContentView.swift       # @main 入口，顶部栏 + HSplitView 双面板
+│   ├── MeetingViewModel.swift  # 核心状态机，@MainActor，触发/重连/事件日志都在这
+│   ├── Models.swift            # TranscriptEntry / InsightCard（kind: insight|reply|summary|system）
+│   ├── Config.swift            # AppConfig：api-vault.env + config.json + MEETINGAI_* 环境覆盖
+│   ├── ASRServerManager.swift  # Go 子进程管理（编译/启动/健康检查/端口占用防御）
+│   ├── ASRBridgePortGuard.swift# 端口被占决策：自家残留→清理，外来进程→报错不误杀
+│   ├── ASRClient.swift         # JSON WebSocket 客户端（串行队列保护状态）
+│   ├── AudioRecorder.swift     # 录音，双路输出 + AudioTapDrainGate（stop 时限时 drain）
+│   ├── AIEngine.swift          # HTTP/Codex CLI 双后端，兼容 reasoning_content 解析
+│   ├── MeetingContextBuilder.swift # 分析上下文分层（hot window/近期/长期）
+│   ├── InsightDeduplicator.swift   # 洞察重复度检测（bigram Jaccard，阈值 0.85）
+│   ├── InsightFeedView.swift   # 右侧洞察卡片流（模式切换、置顶、折叠）
+│   ├── TranscriptView.swift    # 左侧实时转写 + 说话人分离回填区
+│   ├── TranscriptMarkdownWriter.swift # .transcript.md 快照（保留回填区块）
+│   ├── Diarization*.swift      # 归档轨：Chunker/Pipeline/OSS/FunASR/Merger/SessionGate/Backfill
+│   └── SettingsView.swift      # 设置（自定义 Prompt、分析后端切换）
+├── tests/                      # swiftc smoke + shell 脚本（见下）
+├── scripts/                    # 真实 smoke / 彩排采集脚本
+└── docs/                       # dev-log、stage-review、lessons、runtime-logs、research
 ```
 
 ## 常用命令
 
 ```bash
-# 构建（Debug）
-swift build
-
-# 运行（需要麦克风权限 + ~/.claude/api-vault.env 中的 API Key）
-swift run MeetingAI
-
-# 清理构建产物
-swift package clean
-
-# 查看可执行文件路径
-swift build --show-bin-path
-
-# 手动清理遗留的 asr-bridge 子进程（swift run 强制退出时可能遗留）
-pkill asr-bridge
+swift build                     # 构建（Debug）
+swift run MeetingAI             # 运行（需麦克风权限 + api-vault.env 密钥）
+bash tests/run-all.sh           # 一键回归：P0/P1 headless + P2 fixture GUI 主流程
+bash tests/run-p0-p1.sh         # 仅 headless 基线（构建 + 全部 smoke + 代码正确性检查）
+scripts/run-real-meeting-smoke.sh 90 75   # 真实麦克风+联网短 smoke，日志写 docs/runtime-logs/
+scripts/run-real-meeting-rehearsal.sh     # 20-30 分钟真实彩排采集
 ```
+
+清理遗留 bridge 进程时**不要用裸 `pkill asr-bridge`**（会误杀 SpeakLow 等其他项目的同名进程），用：
+`pkill -f '会议中AI给建议.*asr-bridge'`。App 启动时已自带端口占用防御：自家残留自动清理，外来进程占用会明确报错。
 
 ## 配置与密钥
 
-**API 密钥**（从 `~/.claude/api-vault.env` 自动读取，格式 `KEY=VALUE`）：
+**API 密钥**（从 `~/.claude/api-vault.env` 自动读取；GUI App 不继承 shell env，故双读 process env + vault 文件）：
 ```
-DASHSCOPE_API_KEY=...   # ASR 服务（DashScope/阿里云）
-MINIMAX_API_KEY=...     # AI 分析（MiniMax M2.5）
+DASHSCOPE_API_KEY=...   # 实时 ASR（DashScope）
+QWEN_API_KEY=...        # HTTP AI 后端（NVIDIA integrate endpoint）
+OSS_ACCESS_KEY_ID=...   # 可选：Fun-ASR 说话人分离真实上传
+OSS_ACCESS_KEY_SECRET=...
 ```
 
-**应用配置**（`~/Library/Application Support/MeetingAI/config.json`，不存在则使用默认值）：
+**应用配置**（`~/Library/Application Support/MeetingAI/config.json`，不存在则用默认值；本机当前配置）：
 ```json
 {
-  "asr": { "serverPort": 18089, "language": "zh" },
+  "asr": { "serverPort": 18090 },
   "ai": {
-    "autoAnalysisIntervalSeconds": 300,
-    "model": "MiniMax-M2.5",
-    "maxContextTokens": 100000,
-    "baseURL": "https://api.minimaxi.com/v1/text/chatcompletion_v2"
+    "model": "z-ai/glm-5.2",
+    "baseURL": "https://openrouter.ai/api/v1/chat/completions",
+    "apiKeyEnv": "OPENROUTER_API_KEY"
   }
 }
 ```
+其他可用字段：`asr.language`（默认 zh）、`ai.autoAnalysisIntervalSeconds`（默认 300）、`ai.maxContextTokens`（默认 100000）。`ai.apiKeyEnv` 指定 HTTP 后端从哪个环境变量取 key（默认 `QWEN_API_KEY`），换模型供应商只需改 config，不用改代码。
 
-**会话数据**自动保存到 `~/Library/Application Support/MeetingAI/sessions/`：
-- `yyyy-MM-dd-HH-mm-ss.txt`：转写文本（每条 `[HH:mm:ss] 文字` 格式）
-- `yyyy-MM-dd-HH-mm-ss.mp3`：对应录音文件
+常用环境覆盖：`MEETINGAI_ANALYSIS_BACKEND=http|codex_cli|hybrid`、`MEETINGAI_SESSIONS_DIR`、`MEETINGAI_UI_FIXTURE=1`、`MEETINGAI_SEGMENTED_DIARIZATION`、`MEETINGAI_DIARIZATION_CHUNK_SECONDS`、`MEETINGAI_DIARIZATION_UPLOAD_BUCKET`。
 
-## 数据流
-
-```
-麦克风 (AVAudioEngine) → AudioRecorder (PCM16) → ASRClient (JSON WebSocket)
-                              ↓ MP3                      ↓ base64 audio
-                         本地文件              asr-bridge (Go 子进程, :18089)
-                                                         ↓ DashScope qwen3-asr-flash-realtime
-                              MeetingViewModel ← handleTranscript()
-                                    ↓ 触发分析
-                              AIEngine → MiniMax HTTP API
-                                    ↓
-                              ChatMessage[] → ChatView
-```
+**会话产物**（`~/Library/Application Support/MeetingAI/sessions/`，同前缀多文件）：
+`.txt`（仅 final 转写）、`.transcript.md`（含 partial 快照 + 说话人回填）、`.ai.md`（AI 卡片记录）、`.events.log`（JSON Lines 结构化事件，复盘首选）、`.chunks.jsonl`（分片生命周期）、`.diarized.jsonl`（说话人句子）、`.mp3` 或 `.wav`（录音）。
 
 ## AI 分析触发逻辑
 
-三种自动触发（均在 `MeetingViewModel` 中，每 10 秒检查一次）：
-1. **内容积累**：每新增 8 条 final 转写立即触发
-2. **沉默触发**：超过 30 秒无新转写 且 新增 >= 3 条
-3. **兜底上限**：距上次分析超过 600 秒（10 分钟）
-4. **手动触发**：用户点击 ⚡ 按钮或在输入框发送消息
+均在 `MeetingViewModel`，**按文本长度触发，partial 计入**（不依赖 final 条数）：
 
-AI 输出 `"—"` 时静默丢弃（表示当前内容无新意）。每第 5 次分析时 System Prompt 会追加"全局地图"要求。自定义 System Prompt 存储在 `UserDefaults` key `customSystemPrompt`，非空时覆盖默认 Prompt。
+| 模式 | 文本增量触发 | 沉默触发（10s 检查一次） | 最小输出间隔 |
+|------|------------|------------|------------|
+| 观察者 | 不主动分析 | 不触发 | ∞（手动点击会提示切换模式） |
+| 顾问（默认） | ≥200 字 | 沉默 >60s 且新增 ≥50 字 | 120s |
+| 研究员 | ≥100 字 | 沉默 >30s 且新增 ≥30 字 | 45s |
 
-## ASR 子进程 (asr-bridge)
-
-Go 代码位于项目内 `asr-bridge/` 目录（从 speaklow 复制并适配），`ASRServerManager.swift` 通过 `#file` 宏自动定位。
-
-启动流程：检查 `asr-bridge/bin/asr-bridge` 是否存在 → 不存在则调用 `go build -o bin/asr-bridge .` 编译 → 通过环境变量 `ASR_BRIDGE_PORT` 设置端口 → 启动进程 → 健康检查（最多等 15 秒，每 500ms 轮询 `GET /health`）。
-
-Go 编译器查找顺序：`/opt/homebrew/bin/go` → `/usr/local/go/bin/go` → `/usr/local/bin/go`。
-
-ASR WebSocket 连接中断时自动重连，最多 3 次。
+- 兜底：距上次分析 >600s 且有新增内容
+- 手动触发被限流/重复时有可见系统提示；自动触发静默跳过（写 `analysis_skipped` 事件）
+- 新洞察与最近 3 张洞察卡 bigram Jaccard 相似度 ≥0.85 时丢弃（`analysis_discarded_duplicate` 事件），AI 输出 shouldSpeak=false 连续 3 次后强制发声
+- 话题关键词重叠 <30% 时自动触发小结
+- 系统消息使用独立的 `.system` 卡片类型，不再混入洞察
 
 ## 编码规范
 
 - **架构**：MVVM，`MeetingViewModel` 为唯一状态中心，`@MainActor` 保证 UI 更新在主线程
-- **并发**：`async/await` + `Task { @MainActor [weak self] in ... }` 处理跨线程回调
-- **日志**：每个文件顶部声明 `private let logger = Logger(subsystem: "MeetingAI", category: "模块名")`，关键路径打 log（入参、分支判断、异常、返回值）
-- **错误处理**：异常通过 `appendChat(.system, ...)` 在 UI 中显示，同时 `logger.error(...)` 记录
-- **内存安全**：异步回调中使用 `[weak self]` 避免循环引用
+- **并发**：`async/await` + `Task { @MainActor [weak self] in ... }`；跨线程可变状态用串行队列保护
+- **日志**：每文件顶部 `Logger(subsystem: "MeetingAI", category: "模块名")`；关键状态转移和失败分支必打；**严禁输出 API key 值/预签名 URL query**；`.events.log` 中 home path 脱敏为 `~`
+- **错误处理**：用户可见错误走 `.system` 卡片（简洁中文），原始细节进 logger
+- **测试**：toolchain 无 XCTest，用 `swiftc + smoke 可执行` 模式；新逻辑先写 RED 再 GREEN；GUI 自动化收敛在 P2 单条 fixture 主路径，P0/P1 保持 headless
+- **真实链路测试**：结论必须区分 PASS / FAIL / BLOCKED，环境阻塞不许伪装成通过
 
 ## 注意事项
 
-- SPM executableTarget 构建的 SwiftUI macOS App 必须手动调用 `setActivationPolicy(.regular)` + `activate(ignoringOtherApps: true)`，否则窗口无法获得键盘焦点（见 `ContentView.swift` init）
-- 麦克风权限在首次运行时弹窗授权，测试时注意
-- MiniMax API 的 BaseURL 默认为 `api.minimaxi.com`（注意：不是 `api.minimax.chat`），可通过 config.json 的 `ai.baseURL` 覆盖
-- MVP 无持久化聊天历史，关闭即丢弃；转写 txt 和 mp3 录音文件会保存到 sessions 目录
+- SPM executableTarget 的 SwiftUI App 必须手动 `setActivationPolicy(.regular)` + `activate(ignoringOtherApps: true)`（见 ContentView init）
+- NVIDIA/Qwen 的 OpenAI-compatible 响应正文可能在 `message.reasoning_content` 而非 `content`，AIEngine 已兼容，勿回退
+- 本机 MP3 编码可能不可用，录音自动 fallback 单声道 WAV；产物检查看"文件非空"而不是"路径存在"
+- `.txt` 只写 final；partial-only 长会的完整内容靠 `.transcript.md`（TranscriptStore 统一重构仍在待办）
+- Fun-ASR `speaker_id` 不保证跨 chunk 指同一真人；不同 speaker 的相同短句不去重（宁可重复不误删）
+- Fun-ASR 真实云端链路目前 BLOCKED：等 OSS bucket + 凭证配置（`MEETINGAI_REQUIRE_FUNASR_DIARIZATION=1` smoke 会返回 BLOCKED）

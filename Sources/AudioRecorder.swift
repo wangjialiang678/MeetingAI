@@ -11,6 +11,7 @@ class AudioRecorder: ObservableObject {
     private var asrConverter: AVAudioConverter?
     private var recordingConverter: AVAudioConverter?
     private var recordingFile: AVAudioFile?
+    private let tapDrainGate = AudioTapDrainGate()
 
     var onAudioData: ((Data) -> Void)?
     private(set) var recordingURL: URL?
@@ -33,32 +34,17 @@ class AudioRecorder: ObservableObject {
         }
         self.asrConverter = asrConv
 
-        // MP3 recording setup
+        // Recording setup. macOS may not provide an MP3 encoder through AVAudioFile,
+        // so fall back to a PCM WAV file with the same session prefix.
         if let url = recordingURL {
-            let mp3Settings: [String: Any] = [
-                AVFormatIDKey: kAudioFormatMPEGLayer3,
-                AVSampleRateKey: hardwareFormat.sampleRate,
-                AVNumberOfChannelsKey: 1,
-                AVEncoderBitRateKey: 128000
-            ]
-            if let file = try? AVAudioFile(forWriting: url, settings: mp3Settings) {
-                // Use the file's actual processingFormat to build converter
-                if let recConv = AVAudioConverter(from: hardwareFormat, to: file.processingFormat) {
-                    self.recordingFile = file
-                    self.recordingConverter = recConv
-                    self.recordingURL = url
-                    logger.info("MP3 recording: \(url.path), processingFormat=\(file.processingFormat)")
-                } else {
-                    logger.warning("Could not create recording converter, MP3 recording disabled")
-                }
-            } else {
-                logger.warning("Could not create MP3 file at \(url.path), recording disabled")
-            }
+            configureRecordingFile(preferredURL: url, hardwareFormat: hardwareFormat)
         }
 
         inputNode.installTap(onBus: 0, bufferSize: 4096, format: hardwareFormat) { [weak self] buffer, _ in
-            self?.convertAndSendASR(buffer: buffer)
-            self?.writeToMP3(buffer: buffer)
+            self?.tapDrainGate.perform {
+                self?.convertAndSendASR(buffer: buffer)
+                self?.writeRecording(buffer: buffer)
+            }
         }
 
         engine.prepare()
@@ -71,15 +57,63 @@ class AudioRecorder: ObservableObject {
     func stop() {
         engine?.inputNode.removeTap(onBus: 0)
         engine?.stop()
+        if !tapDrainGate.waitForIdle(timeout: 2.0) {
+            logger.warning("Audio tap drain timed out after 2s; continuing stop to avoid blocking the meeting")
+        }
         engine = nil
         asrConverter = nil
         recordingConverter = nil
         recordingFile = nil  // closes the file
         isRecording = false
-        logger.info("Recording stopped, MP3 saved to: \(self.recordingURL?.path ?? "none")")
+        logger.info("Recording stopped, saved to: \(self.recordingURL?.path ?? "none")")
     }
 
     // MARK: - Private
+
+    private func configureRecordingFile(preferredURL url: URL, hardwareFormat: AVAudioFormat) {
+        let mp3Settings: [String: Any] = [
+            AVFormatIDKey: kAudioFormatMPEGLayer3,
+            AVSampleRateKey: hardwareFormat.sampleRate,
+            AVNumberOfChannelsKey: 1,
+            AVEncoderBitRateKey: 128000
+        ]
+
+        if configureRecordingFile(url: url, settings: mp3Settings, hardwareFormat: hardwareFormat) {
+            logger.info("MP3 recording enabled: \(url.path)")
+            return
+        }
+
+        let wavURL = url.deletingPathExtension().appendingPathExtension("wav")
+        let wavSettings: [String: Any] = [
+            AVFormatIDKey: kAudioFormatLinearPCM,
+            AVSampleRateKey: hardwareFormat.sampleRate,
+            AVNumberOfChannelsKey: 1,
+            AVLinearPCMBitDepthKey: 16,
+            AVLinearPCMIsFloatKey: false,
+            AVLinearPCMIsBigEndianKey: false
+        ]
+
+        if configureRecordingFile(url: wavURL, settings: wavSettings, hardwareFormat: hardwareFormat) {
+            logger.info("WAV recording fallback enabled: \(wavURL.path)")
+        } else {
+            logger.warning("Could not create MP3 or WAV recording file, recording disabled")
+        }
+    }
+
+    private func configureRecordingFile(url: URL, settings: [String: Any], hardwareFormat: AVAudioFormat) -> Bool {
+        guard let file = try? AVAudioFile(forWriting: url, settings: settings) else {
+            return false
+        }
+        guard let recConv = AVAudioConverter(from: hardwareFormat, to: file.processingFormat) else {
+            try? FileManager.default.removeItem(at: url)
+            return false
+        }
+        self.recordingFile = file
+        self.recordingConverter = recConv
+        self.recordingURL = url
+        logger.info("Recording file configured: \(url.path), processingFormat=\(file.processingFormat)")
+        return true
+    }
 
     private func convertAndSendASR(buffer: AVAudioPCMBuffer) {
         guard let converter = asrConverter else { return }
@@ -107,7 +141,7 @@ class AudioRecorder: ObservableObject {
         }
     }
 
-    private func writeToMP3(buffer: AVAudioPCMBuffer) {
+    private func writeRecording(buffer: AVAudioPCMBuffer) {
         guard let file = recordingFile, let converter = recordingConverter else { return }
         let procFormat = file.processingFormat
         let ratio = procFormat.sampleRate / buffer.format.sampleRate
@@ -135,5 +169,42 @@ class AudioRecorder: ObservableObject {
             case .converterError: return "无法创建音频格式转换器"
             }
         }
+    }
+}
+
+final class AudioTapDrainGate {
+    private let condition = NSCondition()
+    private var inFlightCallbacks = 0
+
+    func perform(_ work: () -> Void) {
+        condition.lock()
+        inFlightCallbacks += 1
+        condition.unlock()
+
+        defer {
+            condition.lock()
+            inFlightCallbacks -= 1
+            condition.broadcast()
+            condition.unlock()
+        }
+
+        work()
+    }
+
+    @discardableResult
+    func waitForIdle(timeout: TimeInterval? = nil) -> Bool {
+        let deadline = timeout.map { Date(timeIntervalSinceNow: $0) }
+        condition.lock()
+        defer { condition.unlock() }
+        while inFlightCallbacks > 0 {
+            if let deadline {
+                if !condition.wait(until: deadline) {
+                    return inFlightCallbacks == 0
+                }
+            } else {
+                condition.wait()
+            }
+        }
+        return true
     }
 }

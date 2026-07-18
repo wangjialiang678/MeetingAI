@@ -1,0 +1,15 @@
+run_id=real-smoke-2026-05-23-19-16-08
+started_at=Sat May 23 19:16:08 CST 2026
+duration_seconds=1
+analysis_wait_seconds=1
+analysis_backend=http
+diarization_chunk_seconds=2
+require_funasr_diarization=1
+funasr_wait_seconds=240
+log_dir=docs/runtime-logs/real-smoke-2026-05-23-19-16-08
+sessions_dir=/var/folders/sj/3nv6pqh12lj77qm4mzxjpy400000gp/T//meetingai-real-smoke-sessions.OdrpFt
+dashscope_key_present=yes
+qwen_key_present=yes
+oss_access_key_present=no
+oss_secret_present=no
+oss_bucket_env_present=no

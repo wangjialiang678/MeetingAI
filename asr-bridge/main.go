@@ -59,7 +59,9 @@ func main() {
 
 	handler := corsMiddleware(loggingMiddleware(mux))
 
-	addr := ":" + port
+	// 显式绑定 127.0.0.1：端口被占时立刻 bind 失败（响亮报错），
+	// 避免"通配绑定成功但流量被具体绑定进程截胡"的静默故障（见 docs/incident-asr-port-conflict-2026-07-18.md）
+	addr := "127.0.0.1:" + port
 	log.Printf("asr-bridge listening on %s", addr)
 	if err := http.ListenAndServe(addr, handler); err != nil {
 		log.Fatalf("server error: %v", err)
@@ -72,8 +74,9 @@ func healthHandler(w http.ResponseWriter, _ *http.Request) {
 		model = defaultModel
 	}
 	writeJSON(w, http.StatusOK, map[string]string{
-		"status": "ok",
-		"model":  model,
+		"status":  "ok",
+		"model":   model,
+		"service": "meetingai-asr-bridge",
 	})
 }
 
