@@ -38,6 +38,8 @@ struct FunASRProviderSmoke {
             try testRemoteURLDescriptionDropsQuerySecrets()
             try testRedactionCoversOSSv4QueryFragments()
             try await testUnknownTaskStatusFailsFast()
+            try await testNoWordsFailureBecomesEmptyResult()
+            try await testFailedTaskErrorIncludesCloudCode()
             print("Fun-ASR provider smoke tests PASS")
         } catch {
             fputs("Fun-ASR provider smoke tests FAIL: \(error)\n", stderr)
@@ -224,6 +226,60 @@ struct FunASRProviderSmoke {
         } catch let error as DashScopeFunASRError {
             try expect(String(describing: error).contains("UNKNOWN"), "UNKNOWN failure should include provider status")
             try expect(transport.requestCount == 1, "UNKNOWN should not keep polling until timeout")
+        }
+    }
+
+    private static func makeFailedTaskFixture(taskID: String, code: String) -> (DashScopeFunASRProvider, SequenceFunASRTransport, DiarizationProviderTask, DiarizationAudioChunk) {
+        let response = HTTPURLResponse(
+            url: URL(string: "https://dashscope.aliyuncs.com/api/v1/tasks/\(taskID)")!,
+            statusCode: 200,
+            httpVersion: nil,
+            headerFields: nil
+        )!
+        let data = """
+        {"request_id":"req","output":{"task_id":"\(taskID)","task_status":"FAILED","code":"\(code)","message":"\(code)","results":[{"file_url":"https://example.com/chunk.wav","subtask_status":"FAILED","code":"\(code)","message":"\(code)"}]}}
+        """.data(using: .utf8)!
+        let transport = SequenceFunASRTransport(responses: [(data, response)])
+        let provider = DashScopeFunASRProvider(
+            apiKey: "fake",
+            baseURL: URL(string: "https://dashscope.aliyuncs.com/api/v1")!,
+            pollIntervalSeconds: 0.5,
+            timeoutSeconds: 5,
+            transport: transport
+        )
+        let chunk = DiarizationAudioChunk(
+            index: 3,
+            startMilliseconds: 2_000,
+            endMilliseconds: 4_000,
+            localURL: URL(fileURLWithPath: "/tmp/chunk-3.wav"),
+            state: .submitted,
+            taskID: taskID
+        )
+        let task = DiarizationProviderTask(
+            provider: .dashscopeFunASR,
+            taskID: taskID,
+            chunkIndex: 3,
+            state: .submitted,
+            remoteFileURL: URL(string: "https://example.com/chunk.wav")!
+        )
+        return (provider, transport, task, chunk)
+    }
+
+    private static func testNoWordsFailureBecomesEmptyResult() async throws {
+        // 静音分片：云端返回 ASR_RESPONSE_HAVE_NO_WORDS，应视为"成功但 0 句"，不是链路失败
+        let (provider, _, task, chunk) = makeFailedTaskFixture(taskID: "task-silent", code: "ASR_RESPONSE_HAVE_NO_WORDS")
+        let result = try await provider.waitForResult(task: task, chunk: chunk)
+        try expect(result.sentences.isEmpty, "silent chunk should yield empty sentences instead of throwing")
+        try expect(result.chunk.index == 3, "empty result should keep chunk identity")
+    }
+
+    private static func testFailedTaskErrorIncludesCloudCode() async throws {
+        let (provider, _, task, chunk) = makeFailedTaskFixture(taskID: "task-broken", code: "FILE_DOWNLOAD_FAILED")
+        do {
+            _ = try await provider.waitForResult(task: task, chunk: chunk)
+            try expect(false, "non-silence failure should still throw")
+        } catch let error as DashScopeFunASRError {
+            try expect(String(describing: error).contains("FILE_DOWNLOAD_FAILED"), "failure error should surface cloud code, got \(error)")
         }
     }
 }

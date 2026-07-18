@@ -1,0 +1,16 @@
+2026/07/18 16:08:15 asr-bridge listening on 127.0.0.1:18090
+2026/07/18 16:08:15 GET /health 200 97.958µs
+2026/07/18 16:08:15 [stream] pre-speech RMS=40
+2026/07/18 16:08:15 [stream] speech detected (RMS=970), start forwarding audio
+2026/07/18 16:08:16 [Stream] DashScope event: {"event_id":"event_ZWkBonEpQgK4EjSAifyzX","type":"conversation.item.created","item":{"object":"realt...
+2026/07/18 16:14:51 [stream] client loop ended: append audio: write tcp 127.0.0.1:58702->127.0.0.1:7897: i/o timeout
+2026/07/18 16:14:55 GET /v1/stream 200 6m40.562066666s
+2026/07/18 16:15:04 [stream] pre-speech RMS=164
+2026/07/18 16:15:04 [stream] speech detected (RMS=164), start forwarding audio
+2026/07/18 16:15:05 [Stream] DashScope event: {"event_id":"event_QRnipEU4nJRGjJRaQoS3l","type":"conversation.item.created","item":{"object":"realt...
+2026/07/18 16:21:32 [hotword] hotwords.txt not found, skipping
+2026/07/18 16:21:32 asr-bridge listening on 127.0.0.1:18090
+2026/07/18 16:21:32 GET /health 200 226µs
+2026/07/18 16:21:34 [stream] pre-speech RMS=26
+2026/07/18 16:21:34 [stream] speech detected (RMS=315), start forwarding audio
+2026/07/18 16:21:34 [Stream] DashScope event: {"event_id":"event_HsdiJlscvfosEKNZ4L8zD","type":"conversation.item.created","item":{"object":"realt...

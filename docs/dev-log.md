@@ -1,5 +1,22 @@
 # 开发过程日志
 
+## 2026-07-18 - Fun-ASR 真实链路首次 PASS：静音分片修复
+
+### 变更
+- 首次真实 Fun-ASR smoke 失败，手动重放拿到云端根因：`ASR_RESPONSE_HAVE_NO_WORDS`——2 秒短分片切在静音段，云端任务标 FAILED，provider 误当链路失败
+- `DashScopeFunASRProvider`：任务失败且全部错误码为 `ASR_RESPONSE_HAVE_NO_WORDS` 时返回"成功但 0 句"（真实会议静音常见，不算失败）；其他失败错误信息带上云端 code（此前只有 "ended with FAILED"，unified log 又被 `<private>` 脱敏，几乎不可排查）
+- `DashScopeFunASRTaskResponse` 新增顶层 code/message 捕获与 `failureCodes` 汇总
+
+### 验证
+- RED：`fun_asr_provider_smoke` 新增静音空结果、错误码透传两用例 → FAIL
+- GREEN：provider smoke → PASS；`swift build` → PASS
+- **真实 Fun-ASR smoke → PASS**（`docs/runtime-logs/real-smoke-2026-07-18-16-27-27`）：4 chunk 上传 OSS、云端任务完成、`.diarized.jsonl` 产出 speaker 句子、`.transcript.md` 回填区块正常。stage-review 的 P0（真实云端说话人分离验证）正式闭环
+- 链路配置：bucket `audio-asr-temp`（`meetingai/chunks` 前缀）、凭证从 server-vault 复制到 api-vault、config.json 增加 `diarization.uploadBucket`
+
+### 备注
+- 单人合成语音只有 speaker-0，多说话人区分效果需真实多人会议观察
+- 云端 chunk 属临时副本（本地为主副本）；audio-asr-temp 为共享临时桶，后续可考虑生命周期清理
+
 ## 2026-07-18 - GLM JSON 围栏解析修复 + OSS 说话人分离链路配置
 
 ### 变更

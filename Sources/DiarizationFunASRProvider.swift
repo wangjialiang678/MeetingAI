@@ -29,9 +29,20 @@ struct DashScopeFunASRTaskResponse: Equatable {
     let taskID: String
     let status: DashScopeTaskStatus
     let results: [DashScopeFunASRSubtaskResult]
+    let code: String?
+    let message: String?
 
     var successfulResults: [DashScopeFunASRSubtaskResult] {
         results.filter { $0.subtaskStatus == .succeeded && $0.transcriptionURL != nil }
+    }
+
+    /// 失败原因汇总：子任务错误码优先，退回顶层 code/message
+    var failureCodes: [String] {
+        let subtaskCodes = results.compactMap { $0.code ?? $0.message }
+        if !subtaskCodes.isEmpty {
+            return subtaskCodes
+        }
+        return [code ?? message].compactMap { $0 }
     }
 }
 
@@ -134,7 +145,13 @@ final class DashScopeFunASRProvider: DiarizationTranscriptionProvider {
             case .unknown:
                 throw DashScopeFunASRError.taskFailed("task \(task.taskID) returned UNKNOWN status")
             case .failed, .canceled:
-                throw DashScopeFunASRError.taskFailed("task \(task.taskID) ended with \(taskResponse.status.rawValue)")
+                let codes = taskResponse.failureCodes
+                // 静音分片：云端识别不到任何词属预期结果，按"成功但 0 句"处理，不算链路失败
+                if !codes.isEmpty && codes.allSatisfy({ $0 == "ASR_RESPONSE_HAVE_NO_WORDS" }) {
+                    return DiarizationChunkResult(chunk: chunk, sentences: [])
+                }
+                let detail = codes.isEmpty ? "" : " (\(codes.joined(separator: "; ")))"
+                throw DashScopeFunASRError.taskFailed("task \(task.taskID) ended with \(taskResponse.status.rawValue)\(detail)")
             case .succeeded:
                 guard let resultURL = taskResponse.successfulResults.first?.transcriptionURL else {
                     let failures = taskResponse.results.map { "\($0.subtaskStatus.rawValue): \($0.message ?? $0.code ?? "no transcription_url")" }
@@ -220,7 +237,9 @@ final class DashScopeFunASRProvider: DiarizationTranscriptionProvider {
         return DashScopeFunASRTaskResponse(
             taskID: taskID,
             status: parseStatus(output["task_status"]),
-            results: results
+            results: results,
+            code: output["code"] as? String,
+            message: output["message"] as? String
         )
     }
 

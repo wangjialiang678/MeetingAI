@@ -290,6 +290,7 @@ scripts/run-real-meeting-rehearsal.sh
 ## 下一步开发优先级
 
 P0：配置 OSS bucket/凭证后跑一次 `MEETINGAI_REQUIRE_FUNASR_DIARIZATION=1` 真实 Fun-ASR smoke，确认云端链路、`.diarized.jsonl`、Markdown 回填和脱敏判据。
+→ **已完成（2026-07-18）**：真实 smoke PASS（`docs/runtime-logs/real-smoke-2026-07-18-16-27-27`），OSS 上传/Fun-ASR 任务/speaker 回填全链路验证；静音分片 `ASR_RESPONSE_HAVE_NO_WORDS` 已按空结果处理。
 
 P1：做 20-30 分钟真实麦克风 + 联网模型彩排，重点观察 ASR 长连接稳定性、partial/final 比例、AI 输出频率和 Fun-ASR 后台任务耗时。
 
