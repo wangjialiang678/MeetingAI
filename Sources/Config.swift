@@ -162,7 +162,13 @@ struct AppConfig {
             if trimmed.isEmpty || trimmed.hasPrefix("#") { continue }
             let parts = trimmed.split(separator: "=", maxSplits: 1)
             if parts.count == 2 {
-                envVars[String(parts[0]).trimmingCharacters(in: .whitespaces)] = String(parts[1]).trimmingCharacters(in: .whitespaces)
+                var value = String(parts[1]).trimmingCharacters(in: .whitespaces)
+                // shell 风格引号包裹的值要剥壳（TokenHub key 带引号导致 401 的教训）
+                if value.count >= 2,
+                   (value.hasPrefix("\"") && value.hasSuffix("\"")) || (value.hasPrefix("'") && value.hasSuffix("'")) {
+                    value = String(value.dropFirst().dropLast())
+                }
+                envVars[String(parts[0]).trimmingCharacters(in: .whitespaces)] = value
             }
         }
         return envVars
